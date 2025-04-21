@@ -7,7 +7,7 @@ variable "aws_region" {
 variable "instance_type" {
   description = "EC2 instance type (free‑tier: t3.micro)"
   type        = string
-  default     = "t3.micro"
+  default     = "t2.micro"
 }
 
 variable "github_repo_url" {
