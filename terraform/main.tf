@@ -36,3 +36,11 @@ module "ec2_backend" {
   cognito_user_pool_arn = module.cognito.user_pool_arn
   cognito_client_id    = module.cognito.user_pool_client_id
 }
+
+module "rds" {
+  source       = "./modules/rds"
+  project_name = var.project_name
+  db_name     = var.db_name
+  db_username = var.db_username
+  # you may override db_name/db_username/etc here if you like
+}
