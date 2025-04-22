@@ -18,3 +18,10 @@ module "ec2_backend" {
   github_repo_url      = var.github_repo_url
   github_backend_path  = var.github_backend_path
 }
+
+module "cognito" {
+  source           = "./modules/cognito"
+  project_name     = var.project_name
+  user_pool_name   = "${var.project_name}-pool"
+  user_groups      = ["recruiter", "candidate"]
+}
