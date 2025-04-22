@@ -3,8 +3,9 @@ import 'dotenv/config';
 import {
   CognitoIdentityProviderClient,
   SignUpCommand,
+  AdminAddUserToGroupCommand,
   InitiateAuthCommand,
-  ConfirmSignUpCommand
+  ConfirmSignUpCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 
 
@@ -30,32 +31,44 @@ app.get('/api/test', (_req, res) => {
 
 // 1) Sign Up endpoint
 app.post('/api/signup', async (req:any, res:any) => {
-  const { username, password, email } = req.body;
-  if (!username || !password || !email) {
-    return res.status(400).json({ error: 'username, email and password are required' });
+  console.log('Sign up request', req.body);
+  const { email, password, group } = req.body;
+  if (!email || !password || !group) {
+    return res
+      .status(400)
+      .json({ error: 'email, password and group are required' });
   }
 
   try {
-    console.log('Sign up request', req.body);
-    const cmd = new SignUpCommand({
+    // 1a. Create the user
+    const signUpCmd = new SignUpCommand({
       ClientId: process.env.COGNITO_CLIENT_ID!,
       Username: email,
       Password: password,
-      UserAttributes: [
-        { Name: 'email', Value: email }
-      ]
+      UserAttributes: [{ Name: 'email', Value: email }]
     });
-    const response = await cognito.send(cmd);
+    const signUpResp = await cognito.send(signUpCmd);
+
+    // 1b. Add them to the requested group
+    const addGroupCmd = new AdminAddUserToGroupCommand({
+      UserPoolId: process.env.COGNITO_USER_POOL_ID!,
+      Username: email,
+      GroupName:  group
+    });
+    await cognito.send(addGroupCmd);
+
     res.json({
-      message: 'Sign‑up successful, please check your email to confirm.',
-      userSub: response.UserSub,
-      codeDeliveryDetails: response.CodeDeliveryDetails
+      message:            'Sign‑up successful; check your email to confirm.',
+      userSub:            signUpResp.UserSub,
+      codeDeliveryDetails: signUpResp.CodeDeliveryDetails,
+      addedToGroup:       group
     });
   } catch (err: any) {
-    console.error('Signup error', err);
-    res.status(500).json({ error: err.message || err });
+    console.error('Signup/group error', err);
+
   }
-});
+}
+);
 
 //  2) Confirm Sign‑Up by email & code
 
