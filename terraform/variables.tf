@@ -1,3 +1,4 @@
+# root/variables.tf
 variable "project_name" {
   description = "Name of the project (used to prefix resources)"
   type        = string

@@ -1,3 +1,4 @@
+# root/outputs.tf
 output "backend_public_dns" {
   description = "Public DNS of the EC2 instance"
   value       = module.ec2_backend.backend_public_dns

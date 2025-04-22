@@ -1,3 +1,4 @@
+# root/module/cognito/variables.tf
 variable "project_name" {
   description = "Used to prefix all Cognito resources"
   type        = string

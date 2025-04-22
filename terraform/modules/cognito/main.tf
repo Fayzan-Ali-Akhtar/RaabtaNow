@@ -1,3 +1,4 @@
+# root/modules/cognito/main.tf
 # 1. User Pool
 resource "aws_cognito_user_pool" "this" {
   name                     = var.user_pool_name
