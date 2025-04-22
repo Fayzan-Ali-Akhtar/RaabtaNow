@@ -44,3 +44,8 @@ variable "cognito_client_id" {
   description = "ID of the Cognito App Client"
   type        = string
 }
+
+variable "cognito_user_pool_arn" {
+  description = "ARN of the Cognito User Pool (for inline policy)"
+  type        = string
+}

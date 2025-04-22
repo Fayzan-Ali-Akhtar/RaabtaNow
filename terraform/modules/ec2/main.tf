@@ -11,6 +11,9 @@ resource "aws_iam_role" "ssm_role" {
     }]
   })
 
+  # Automatically detach managed policies on destroy
+  force_detach_policies = true
+
   tags = {
     Name = "${var.project_name}-ec2-ssm-role"
   }
@@ -77,34 +80,59 @@ resource "aws_instance" "this" {
     #!/bin/bash
     set -ex
 
-    # 0) Write environment file for Node process
-    cat << ENV > /home/ec2-user/.env
-    AWS_REGION=${var.aws_region}
-    COGNITO_USER_POOL_ID=${var.cognito_user_pool_id}
-    COGNITO_CLIENT_ID=${var.cognito_client_id}
-    ENV
-
     # 1) Logging all output
     exec > >(tee /home/ec2-user/app.log) 2>&1
 
-    # 2) Update & install dependencies
+    # 2) Update & install
     dnf update -y
     dnf install -y git nodejs20
 
-    # 3) Clone & build your backend
+    # 3) Clone your repo
     cd /home/ec2-user
     git clone ${var.github_repo_url}
     cd ${var.github_backend_path}
 
+    # 4) Write .env in the backend folder
+    cat > .env <<EOL
+    AWS_REGION=${var.aws_region}
+    COGNITO_USER_POOL_ID=${var.cognito_user_pool_id}
+    COGNITO_CLIENT_ID=${var.cognito_client_id}
+    EOL
+
+    # 5) Build & start
     npm install
     npm run build
-
-    # 4) Start with .env loaded
-    # dotenv/config reads /home/ec2-user/.env automatically
     nohup npm start &
   EOF
 
   tags = {
     Name = "${var.project_name}-ec2-instance"
   }
+}
+
+# now grant exactly the Cognito‐IDP rights your app needs:
+resource "aws_iam_role_policy" "cognito_idp" {
+  name = "${var.project_name}-ec2-cognito-idp"
+  role = aws_iam_role.ssm_role.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "cognito-idp:SignUp",
+          "cognito-idp:ConfirmSignUp",
+          "cognito-idp:InitiateAuth",
+          "cognito-idp:AdminAddUserToGroup"
+        ]
+        Resource = var.cognito_user_pool_arn
+      },
+      {
+        Effect = "Allow"
+        Action   = "cognito-idp:AdminGetUser"
+        Resource = var.cognito_user_pool_arn
+      }
+    ]
+  })
 }
