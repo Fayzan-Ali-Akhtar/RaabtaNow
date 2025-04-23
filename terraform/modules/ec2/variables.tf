@@ -49,3 +49,9 @@ variable "cognito_user_pool_arn" {
   description = "ARN of the Cognito User Pool (for inline policy)"
   type        = string
 }
+
+variable "db_endpoint" { type = string }
+variable "db_port" { type = number }
+variable "db_name" { type = string }
+variable "db_username" { type = string }
+variable "db_password" { type = string }

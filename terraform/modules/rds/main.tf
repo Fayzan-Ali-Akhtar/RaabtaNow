@@ -48,7 +48,7 @@ resource "aws_security_group" "rds" {
 resource "random_password" "rds" {
   length           = var.db_password_length
   special          = true
-  override_special = "!@#$%&*()_+-="
+  override_special = "!#$%&*()_+-="
   min_lower        = 1
   min_upper        = 1
   min_numeric      = 1

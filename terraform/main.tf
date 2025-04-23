@@ -22,7 +22,10 @@ module "cognito" {
 # 4. Then EC2 — depends_on ensures Terraform orders them
 module "ec2_backend" {
   source               = "./modules/ec2"
-  depends_on           = [ module.cognito ]            # Cognito must finish first
+  depends_on           = [
+    module.cognito,     # Cognito must finish first
+    module.rds,         # wait for RDS fully provisioned
+  ]
   project_name         = var.project_name
   aws_region           = var.aws_region
   ami_id               = data.aws_ssm_parameter.al2023_ami.value
@@ -35,6 +38,13 @@ module "ec2_backend" {
   cognito_user_pool_id = module.cognito.user_pool_id
   cognito_user_pool_arn = module.cognito.user_pool_arn
   cognito_client_id    = module.cognito.user_pool_client_id
+
+  # pass RDS outputs into EC2
+  db_endpoint   = module.rds.endpoint
+  db_port       = module.rds.port
+  db_name       = module.rds.db_name
+  db_username   = module.rds.username
+  db_password   = module.rds.password
 }
 
 module "rds" {
@@ -43,4 +53,23 @@ module "rds" {
   db_name     = var.db_name
   db_username = var.db_username
   # you may override db_name/db_username/etc here if you like
+}
+
+# 4) After everything, write backend/.env
+resource "local_file" "backend_env" {
+  depends_on = [
+    module.cognito,
+    module.rds,
+  ]
+  filename = "${path.module}/../backend/.env"
+  content  = <<-EOF
+    AWS_REGION=${var.aws_region}
+    COGNITO_USER_POOL_ID=${module.cognito.user_pool_id}
+    COGNITO_CLIENT_ID=${module.cognito.user_pool_client_id}
+    DB_ENDPOINT=${module.rds.endpoint}
+    DB_PORT=${module.rds.port}
+    DB_NAME=${module.rds.db_name}
+    DB_USERNAME=${module.rds.username}
+    DB_PASSWORD=${module.rds.password}
+    EOF
 }

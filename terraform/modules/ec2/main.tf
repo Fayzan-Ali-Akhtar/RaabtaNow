@@ -97,6 +97,12 @@ resource "aws_instance" "this" {
     AWS_REGION=${var.aws_region}
     COGNITO_USER_POOL_ID=${var.cognito_user_pool_id}
     COGNITO_CLIENT_ID=${var.cognito_client_id}
+
+    DB_ENDPOINT=${var.db_endpoint}
+    DB_PORT=${var.db_port}
+    DB_NAME=${var.db_name}
+    DB_USERNAME=${var.db_username}
+    DB_PASSWORD=${var.db_password}
     EOL
 
     # 5) Build & start
