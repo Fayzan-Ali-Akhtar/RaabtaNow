@@ -49,3 +49,13 @@ output "db_password" {
   value       = module.rds.password
   sensitive   = true
 }
+
+output "frontend_bucket" {
+  description = "S3 bucket name for your frontend"
+  value       = module.frontend.bucket_id
+}
+
+output "frontend_url" {
+  description = "Your frontend’s static-website endpoint"
+  value       = module.frontend.website_endpoint
+}
