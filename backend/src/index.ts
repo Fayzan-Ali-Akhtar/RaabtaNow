@@ -65,7 +65,9 @@ app.post('/api/signup', async (req:any, res:any) => {
     });
   } catch (err: any) {
     console.error('Signup/group error', err);
-
+    // return the error code and message
+    const status = err.$metadata?.httpStatusCode || 500;
+    return res.status(status).json({ error: err.message || 'Signup failed' });
   }
 }
 );
@@ -95,7 +97,11 @@ app.post(
       res.json({ message: 'User confirmed successfully.' });
     } catch (err: any) {
       console.error('Confirm error', err);
-    }
+      const status = err.$metadata?.httpStatusCode || 500;
+      return res
+        .status(status)
+        .json({ error: err.message || 'Confirmation failed' });
+      }
   }
 );
 
@@ -124,6 +130,10 @@ app.post('/api/login', async (req:any, res:any) => {
     res.json({ AccessToken, IdToken, RefreshToken, ExpiresIn });
   } catch (err: any) {
     console.error('Login error', err);
+    const status = err.$metadata?.httpStatusCode === 400 ? 401 : 500;
+    return res
+      .status(status)
+      .json({ error: err.message || 'Authentication failed' });
   }
 }
 );

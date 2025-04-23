@@ -28,3 +28,15 @@ variable "github_backend_path" {
   type        = string
   default     = "RaabtaNow/backend"
 }
+
+variable "db_name" {
+  description = "Initial database name (must be lowercase)"
+  type        = string
+  default     = "raabta"
+}
+
+variable "db_username" {
+  description = "RDS master username (must be lowercase)"
+  type        = string
+  default     = "postgres"
+}
