@@ -3,7 +3,7 @@
 resource "aws_cognito_user_pool" "this" {
   name                     = var.user_pool_name
   auto_verified_attributes = var.auto_verified_attributes
-  username_attributes = ["email"]
+  username_attributes      = ["email"]
 
   # Allow *anyone* to sign up (not just admins)
   admin_create_user_config {
@@ -21,6 +21,9 @@ resource "aws_cognito_user_pool" "this" {
     Name    = "${var.project_name}-user-pool"
     Project = var.project_name
   }
+
+  # make sure deletion protection is off so Terraform can delete it
+  deletion_protection = "INACTIVE"
 }
 
 # 2. App Client (supports sign-up & password flows)
@@ -29,8 +32,8 @@ resource "aws_cognito_user_pool_client" "app" {
   user_pool_id = aws_cognito_user_pool.this.id
 
   explicit_auth_flows = [
-    "ALLOW_USER_PASSWORD_AUTH",    # allow username/password
-    "ALLOW_USER_SRP_AUTH",         # allow SRP sign-in
+    "ALLOW_USER_PASSWORD_AUTH", # allow username/password
+    "ALLOW_USER_SRP_AUTH",      # allow SRP sign-in
     "ALLOW_REFRESH_TOKEN_AUTH",
   ]
 
