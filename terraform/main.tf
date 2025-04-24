@@ -73,3 +73,26 @@ resource "local_file" "backend_env" {
     DB_PASSWORD=${module.rds.password}
     EOF
 }
+
+module "frontend" {
+  source       = "./modules/frontend"
+  project_name = var.project_name
+  aws_region   = var.aws_region
+  # this must point at your local frontend folder
+  frontend_dir = "${path.root}/../frontend"
+
+  backend_url = module.ec2_backend.backend_url
+
+  depends_on   = [
+    module.ec2_backend,  # wait for backend & its .env
+  ]
+}
+
+# Adding .env file in frontend folder
+resource "local_file" "frontend_env" {
+  depends_on = [ module.ec2_backend ]      # ensure we know the backend URL
+  filename   = "${path.module}/../frontend/.env.production"
+  content    = <<-EOF
+VITE_BACKEND_URL=${module.ec2_backend.backend_url}
+EOF
+}
