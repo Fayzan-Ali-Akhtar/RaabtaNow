@@ -1,5 +1,6 @@
 import express from 'express';
 import 'dotenv/config';
+import cors from 'cors';
 import {
   CognitoIdentityProviderClient,
   SignUpCommand,
@@ -11,6 +12,10 @@ import {
 
 const app = express();
 const port = process.env.PORT || 3000;
+
+app.use(cors({
+  origin: '*'
+}))
 
 app.use(express.json());
 

@@ -3,17 +3,15 @@
 resource "aws_s3_bucket" "this" {
   bucket = "${lower(var.project_name)}-frontend-${var.aws_region}"
 
+  # when you run `terraform destroy`, this tells TF to purge
+  # all objects (and versions) before removing the bucket
+   force_destroy = true
+
   tags = {
     Name    = "${var.project_name}-frontend"
     Project = var.project_name
   }
 }
-
-# # new, recommended ACL resource:
-# resource "aws_s3_bucket_acl" "this" {
-#   bucket = aws_s3_bucket.this.id
-#   acl    = "public-read"
-# }
 
 # new, non-deprecated website config:
 resource "aws_s3_bucket_website_configuration" "this" {
@@ -55,8 +53,18 @@ resource "aws_s3_bucket_policy" "this" {
   policy = data.aws_iam_policy_document.public_read.json
 }
 
+# write a Vite‐compatible env file
+resource "local_file" "frontend_env" {
+  filename = "${var.frontend_dir}/.env.production"
+  content  = <<-EOF
+VITE_BACKEND_URL=${var.backend_url}
+EOF
+}
+
 # 3. Build & deploy your Vite app (runs on the machine doing `terraform apply`)
 resource "null_resource" "deploy" {
+  # ensure our env file is in place before building
+  depends_on = [ local_file.frontend_env ]
   triggers = {
     redeploy = timestamp()
   }
@@ -67,4 +75,3 @@ resource "null_resource" "deploy" {
     command     = "npm ci && npm run build && aws s3 sync dist/ s3://${aws_s3_bucket.this.bucket} --delete"
   }
 }
-

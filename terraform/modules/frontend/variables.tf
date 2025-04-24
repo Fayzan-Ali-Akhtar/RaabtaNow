@@ -12,3 +12,8 @@ variable "frontend_dir" {
   description = "Absolute path to the local frontend folder"
   type        = string
 }
+
+variable "backend_url" {
+  description = "The HTTP URL for our deployed backend"
+  type        = string
+}
