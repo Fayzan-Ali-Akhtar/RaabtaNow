@@ -1,0 +1,1 @@
+export const VITE_BACKEND_URL : string = 'http://localhost:3000'

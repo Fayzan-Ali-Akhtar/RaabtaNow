@@ -1,14 +1,18 @@
 // src/App.tsx
 import { useState, useEffect } from 'react'
+import {VITE_BACKEND_URL} from './constant'
 import './App.css'
 
 function App() {
   const [backendMsg, setBackendMsg] = useState<string>('Loading…')
+  const [backendUrl, setBackendUrl] = useState<string>('Finding backend URL...')
 
   useEffect(() => {
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || VITE_BACKEND_URL
+    setBackendUrl(backendUrl);
     console.log('Fetching backend message...')
-    console.log(`Backend URL: ${import.meta.env.VITE_BACKEND_URL}`)
-    fetch(import.meta.env.VITE_BACKEND_URL)
+    console.log(`Backend URL: ${backendUrl}`)
+    fetch(backendUrl)
       .then(res => res.text())
       .then(text => setBackendMsg(text))
       .catch(err => {
@@ -24,6 +28,9 @@ function App() {
       </h1>
       <p className="text-xl text-white">
         {backendMsg}
+      </p>
+      <p className="text-lg text-white mt-4">
+        Backend URL: {backendUrl}
       </p>
     </div>
   )
