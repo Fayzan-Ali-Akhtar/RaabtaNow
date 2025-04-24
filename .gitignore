@@ -26,3 +26,8 @@ dist-ssr
 terraform/.terraform
 backend/.env
 frontend/.env.production
+
+terraform/.terraform.lock.hcl
+terraform/.terraform.tfstate.lock.info
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
