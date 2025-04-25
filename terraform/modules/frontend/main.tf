@@ -1,11 +1,8 @@
 # root/modules/frontend/main.tf
-# 1. Public S3 bucket with website hosting
+# 1) S3 bucket (no website hosting here)
 resource "aws_s3_bucket" "this" {
-  bucket = "${lower(var.project_name)}-frontend-${var.aws_region}"
-
-  # when you run `terraform destroy`, this tells TF to purge
-  # all objects (and versions) before removing the bucket
-   force_destroy = true
+  bucket        = "${lower(var.project_name)}-frontend-${replace(var.aws_region,"-","")}"
+  force_destroy = true
 
   tags = {
     Name    = "${var.project_name}-frontend"
@@ -13,65 +10,118 @@ resource "aws_s3_bucket" "this" {
   }
 }
 
-# new, non-deprecated website config:
-resource "aws_s3_bucket_website_configuration" "this" {
-  bucket = aws_s3_bucket.this.id
-
-  index_document {
-    suffix = "index.html"
-  }
-  error_document {
-    key = "index.html"
-  }
-}
-
-# 2. Allow public read on the bucket’s objects
+# 2) Block public ACLs but allow bucket policy
 resource "aws_s3_bucket_public_access_block" "this" {
-  bucket = aws_s3_bucket.this.id
-
-  block_public_acls       = false
+  bucket                  = aws_s3_bucket.this.id
+  block_public_acls       = true
   block_public_policy     = false
-  ignore_public_acls      = false
+  ignore_public_acls      = true
   restrict_public_buckets = false
 }
 
-data "aws_iam_policy_document" "public_read" {
-  statement {
-    sid    = "PublicRead"
-    effect = "Allow"
-    principals {
-      type        = "AWS"
-      identifiers = ["*"]
-    }
-    actions   = ["s3:GetObject"]
-    resources = ["${aws_s3_bucket.this.arn}/*"]
-  }
-}
-
-resource "aws_s3_bucket_policy" "this" {
-  bucket = aws_s3_bucket.this.id
-  policy = data.aws_iam_policy_document.public_read.json
-}
-
-# write a Vite‐compatible env file
+# 3) Build & deploy your Vite app
 resource "local_file" "frontend_env" {
   filename = "${var.frontend_dir}/.env.production"
-  content  = <<-EOF
-VITE_BACKEND_URL=${var.backend_url}
-EOF
+  content  = "VITE_BACKEND_URL=${var.backend_url}\n"
 }
 
-# 3. Build & deploy your Vite app (runs on the machine doing `terraform apply`)
 resource "null_resource" "deploy" {
-  # ensure our env file is in place before building
   depends_on = [ local_file.frontend_env ]
-  triggers = {
-    redeploy = timestamp()
-  }
+  triggers   = { redeploy = timestamp() }
 
   provisioner "local-exec" {
     working_dir = var.frontend_dir
-    # single-line command so cmd.exe understands the && correctly
     command     = "npm ci && npm run build && aws s3 sync dist/ s3://${aws_s3_bucket.this.bucket} --delete"
+  }
+}
+
+# 4) CloudFront Origin Access Identity
+resource "aws_cloudfront_origin_access_identity" "oai" {
+  comment = "OAI for ${var.project_name}-frontend"
+}
+
+# 5) Only that OAI can GetObject
+resource "aws_s3_bucket_policy" "this" {
+  bucket = aws_s3_bucket.this.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = {
+          AWS = aws_cloudfront_origin_access_identity.oai.iam_arn
+        }
+        Action   = "s3:GetObject"
+        Resource = "${aws_s3_bucket.this.arn}/*"
+      }
+    ]
+  })
+}
+
+# 6) CloudFront Distribution
+resource "aws_cloudfront_distribution" "this" {
+  enabled             = true
+  is_ipv6_enabled     = true
+  comment             = "CF distro for ${var.project_name}"
+  price_class         = "PriceClass_100"
+  default_root_object = "index.html"                # ← serve index.html at /
+
+  origin {
+    domain_name = aws_s3_bucket.this.bucket_regional_domain_name
+    origin_id   = "S3-${aws_s3_bucket.this.id}"
+
+    s3_origin_config {
+      origin_access_identity = aws_cloudfront_origin_access_identity.oai.cloudfront_access_identity_path
+    }
+  }
+
+  default_cache_behavior {
+    target_origin_id       = "S3-${aws_s3_bucket.this.id}"
+    viewer_protocol_policy = "redirect-to-https"
+
+    allowed_methods = ["GET", "HEAD", "OPTIONS"]
+    cached_methods  = ["GET", "HEAD"]
+
+    forwarded_values {
+      query_string = false
+      cookies { forward = "none" }
+    }
+
+    min_ttl     = 0
+    default_ttl = 3600
+    max_ttl     = 86400
+  }
+
+  # for SPA routing: return index.html on 403
+  ordered_cache_behavior {
+    path_pattern           = "*.html"
+    target_origin_id       = "S3-${aws_s3_bucket.this.id}"
+    viewer_protocol_policy = "redirect-to-https"
+    allowed_methods        = ["GET","HEAD","OPTIONS"]
+    cached_methods         = ["GET","HEAD"]
+    forwarded_values {
+      query_string = false
+      cookies { forward = "none" }
+    }
+  }
+
+  # catch-all 403 → index.html (so client‐side routes load)
+  custom_error_response {
+    error_code            = 403
+    response_page_path    = "/index.html"
+    response_code         = 200
+    error_caching_min_ttl = 0
+  }
+
+  viewer_certificate {
+    cloudfront_default_certificate = true
+  }
+
+  restrictions {
+    geo_restriction { restriction_type = "none" }
+  }
+
+  tags = {
+    Project = var.project_name
   }
 }

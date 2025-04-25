@@ -1,3 +1,4 @@
+# root/module/frontend/variables.tf
 variable "project_name" {
   description = "Used to name the S3 bucket"
   type        = string
