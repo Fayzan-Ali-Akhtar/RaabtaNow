@@ -16,10 +16,12 @@ import CoverLetterPage from "./pages/CoverLetterPage";
 import SettingsPage from "./pages/SettingsPage";
 import FeaturesPage from "./pages/FeaturesPage";
 import NotFound from "./pages/NotFound";
+import { AuthProvider } from "./context/AuthContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
+  <AuthProvider>
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
@@ -40,6 +42,7 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
+  </AuthProvider>
 );
 
 export default App;

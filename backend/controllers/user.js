@@ -11,25 +11,23 @@ config({ path: "./config.env" });
 
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password, confirm_password } = req.body;
+    const { name, email, password } = req.body;
 
     console.log("Registering user with data:", req.body);
 
     if (
       anyValueIsEmpty(name) ||
       anyValueIsEmpty(email) ||
-      anyValueIsEmpty(password) ||
-      anyValueIsEmpty(confirm_password)
-    ) {
+      anyValueIsEmpty(password) ) {
       return res
         .status(400)
         .json({ success: false, message: "Please provide all fields" });
     }
 
-    if (password !== confirm_password) {
+    if (password.length < 8) {
       return res
         .status(400)
-        .json({ success: false, message: "Passwords do not match" });
+        .json({ success: false, message: "Passwords lenght not matches required length of 8 chars" });
     }
 
     const userExists = await User.findOne({ where: { email } });

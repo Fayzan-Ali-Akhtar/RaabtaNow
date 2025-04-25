@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,11 +6,12 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import MainLayout from '@/components/layout/MainLayout';
+import { useAuth } from '@/context/AuthContext';
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
+  const { login, isLoading: authLoading, user } = useAuth(); 
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -35,27 +35,29 @@ const LoginPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     
     try {
-      // In a real app, this would call an authentication API
-      console.log('Login form submitted:', formData);
+      await login(formData.email, formData.password);
       
-      // Mock successful login
-      setTimeout(() => {
-        toast({
-          title: "Logged in successfully",
-          description: "Welcome back to WorkLink AI!"
-        });
-        navigate('/feed');
-        setIsLoading(false);
-      }, 1500);
+      console.log('User logged in:', user); // user object, check if login was successful
+
+      toast({
+        title: "Logged in successfully",
+        description: "Welcome back to WorkLink AI!"
+      });
+      
+      if (formData.rememberMe) {
+        localStorage.setItem('rememberMe', 'true');
+      } else {
+        localStorage.removeItem('rememberMe');
+      }
+      
+      navigate('/feed');
     } catch (error) {
       console.error('Login error:', error);
-      setIsLoading(false);
       toast({
         title: "Login failed",
-        description: "Please check your credentials and try again.",
+        description: error instanceof Error ? error.message : "Please check your credentials and try again.",
         variant: "destructive"
       });
     }
@@ -115,8 +117,12 @@ const LoginPage = () => {
                   </Label>
                 </div>
                 
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Signing in..." : "Sign in"}
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={authLoading} // Use authLoading from context
+                >
+                  {authLoading ? "Signing in..." : "Sign in"}
                 </Button>
               </div>
             </form>
