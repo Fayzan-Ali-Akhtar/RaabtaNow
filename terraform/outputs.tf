@@ -56,6 +56,6 @@ output "frontend_bucket" {
 }
 
 output "frontend_url" {
-  description = "Your frontend’s static-website endpoint"
-  value       = module.frontend.website_endpoint
+  value       = module.frontend.cloudfront_domain_name
+  description = "CloudFront URL serving your frontend"
 }

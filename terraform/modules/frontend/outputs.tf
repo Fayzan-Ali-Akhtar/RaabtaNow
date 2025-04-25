@@ -1,9 +1,11 @@
+# root/module/frontend/outputs.tf
 output "bucket_id" {
-  description = "Name of the S3 bucket serving your frontend"
+  description = "Name of the S3 bucket"
   value       = aws_s3_bucket.this.id
 }
 
-output "website_endpoint" {
-  description = "Static website URL for your frontend"
-  value       = "http://${aws_s3_bucket.this.bucket}.s3-website-${var.aws_region}.amazonaws.com"
+output "cloudfront_domain_name" {
+  description = "HTTPS URL of your frontend"
+  # prepend https:// if you like
+  value = aws_cloudfront_distribution.this.domain_name
 }
