@@ -1,7 +1,7 @@
 import express from "express"
-import { getUserProfile, createProfile } from "../controllers/profile.js";
+import { getProfile, createProfile } from "../controllers/profile.js";
 
 export const profileRouter = express.Router();
 
-profileRouter.get('/', getUserProfile);
+profileRouter.get('/', getProfile);
 profileRouter.post('/create', createProfile);

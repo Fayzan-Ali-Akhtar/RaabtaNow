@@ -1,5 +1,5 @@
-
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,19 +16,30 @@ const CoverLetterPage = () => {
   const [jobTitle, setJobTitle] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [selectedResume, setSelectedResume] = useState('');
-  
-  // Mock generated cover letter content
+  const [isReadOnly, setIsReadOnly] = useState(false);
   const [coverLetterContent, setCoverLetterContent] = useState('');
-  
-  // Mock resume options (in a real app, these would come from the user's uploaded resumes)
+
   const resumeOptions = [
     { id: 'resume-1', name: 'Software_Developer_Resume.pdf' },
     { id: 'resume-2', name: 'Marketing_Resume.pdf' }
   ];
 
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const titleParam = searchParams.get('title');
+    const companyParam = searchParams.get('company');
+
+    if (titleParam && companyParam) {
+      setJobTitle(titleParam);
+      setCompanyName(companyParam);
+      setIsReadOnly(true);
+    }
+  }, [searchParams]);
+
   const handleGenerate = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!jobTitle || !companyName || !selectedResume) {
       toast({
         title: "Missing information",
@@ -37,12 +48,10 @@ const CoverLetterPage = () => {
       });
       return;
     }
-    
+
     setIsGenerating(true);
-    
-    // In a real app, this would call an API to generate the cover letter
+
     setTimeout(() => {
-      // Example generated cover letter
       const generatedContent = `
 Dear Hiring Manager,
 
@@ -50,7 +59,7 @@ I am writing to express my interest in the ${jobTitle} position at ${companyName
 
 Throughout my career, I have developed strong technical skills in frontend and backend development, with particular expertise in React, TypeScript, and Node.js. My experience aligns perfectly with the requirements outlined in your job posting.
 
-At my previous role at TechCorp, I led the development of a customer portal that increased user engagement by 45% and reduced support tickets by 30%. I collaborated effectively with cross-functional teams to deliver this project ahead of schedule and under budget.
+At my previous role, I led the development of a customer portal that increased user engagement by 45% and reduced support tickets by 30%. I collaborated effectively with cross-functional teams to deliver this project ahead of schedule and under budget.
 
 I am particularly drawn to ${companyName}'s commitment to innovation and user-centered design. Your recent project launching an AI-powered recommendation engine resonates with my own professional interests and expertise.
 
@@ -58,11 +67,11 @@ I would welcome the opportunity to discuss how my skills and experience can cont
 
 Sincerely,
 Alex Johnson
-`;
-      
+      `;
+
       setCoverLetterContent(generatedContent);
       setIsGenerating(false);
-      
+
       toast({
         title: "Cover letter generated",
         description: "Your personalized cover letter has been created successfully."
@@ -71,9 +80,7 @@ Alex Johnson
   };
 
   const handleSave = () => {
-    // In a real app, this would save the cover letter to the user's account
     setIsEditing(false);
-    
     toast({
       title: "Cover letter saved",
       description: "Your cover letter has been saved successfully."
@@ -81,16 +88,13 @@ Alex Johnson
   };
 
   const handleDownload = () => {
-    // In a real app, this would generate and download a PDF/DOCX file
     toast({
       title: "Downloading cover letter",
       description: "Your cover letter is being prepared for download."
     });
-    
-    // Mock download timeout
+
     setTimeout(() => {
-      // Logic for creating and downloading the file would go here
-      console.log('Download cover letter');
+      console.log('Download logic here');
     }, 1000);
   };
 
@@ -98,13 +102,13 @@ Alex Johnson
     <MainLayout>
       <div className="max-w-4xl mx-auto py-8">
         <h1 className="text-2xl font-bold mb-6">AI Cover Letter Generator</h1>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Input Form */}
+          {/* Job Details Form */}
           <div className="md:col-span-1">
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <h2 className="text-lg font-semibold mb-4">Job Details</h2>
-              
+
               <form onSubmit={handleGenerate} className="space-y-4">
                 <div>
                   <Label htmlFor="job-title">Job Title</Label>
@@ -114,9 +118,10 @@ Alex Johnson
                     value={jobTitle}
                     onChange={(e) => setJobTitle(e.target.value)}
                     required
+                    readOnly={isReadOnly}
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="company-name">Company Name</Label>
                   <Input
@@ -125,15 +130,13 @@ Alex Johnson
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
                     required
+                    readOnly={isReadOnly}
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="resume-select">Select Resume</Label>
-                  <Select
-                    value={selectedResume}
-                    onValueChange={setSelectedResume}
-                  >
+                  <Select value={selectedResume} onValueChange={setSelectedResume}>
                     <SelectTrigger id="resume-select">
                       <SelectValue placeholder="Choose a resume" />
                     </SelectTrigger>
@@ -149,28 +152,15 @@ Alex Johnson
                     Our AI will analyze your resume to personalize the cover letter.
                   </p>
                 </div>
-                
-                <Button 
-                  type="submit" 
-                  className="w-full"
-                  disabled={isGenerating}
-                >
+
+                <Button type="submit" className="w-full" disabled={isGenerating}>
                   {isGenerating ? "Generating..." : "Generate Cover Letter"}
                 </Button>
               </form>
-              
-              <div className="mt-6 pt-6 border-t">
-                <h3 className="text-sm font-medium text-gray-900 mb-2">Tips</h3>
-                <ul className="text-sm text-gray-600 space-y-2 list-disc pl-5">
-                  <li>Upload your most relevant and up-to-date resume</li>
-                  <li>Include the exact job title from the listing</li>
-                  <li>Review and edit the generated letter before sending</li>
-                </ul>
-              </div>
             </div>
           </div>
-          
-          {/* Cover Letter Preview */}
+
+          {/* Preview / Edit Section */}
           <div className="md:col-span-2">
             <div className="bg-white rounded-lg shadow-sm border h-full flex flex-col">
               <div className="p-6 border-b flex items-center justify-between">
@@ -178,24 +168,15 @@ Alex Johnson
                   <FileText className="h-5 w-5 text-worklink-600" />
                   <h2 className="text-lg font-semibold">Cover Letter</h2>
                 </div>
-                
+
                 <div className="flex space-x-2">
                   {coverLetterContent && (
                     <>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => setIsEditing(!isEditing)}
-                      >
+                      <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)}>
                         <Settings className="mr-2 h-4 w-4" />
                         {isEditing ? "Preview" : "Edit"}
                       </Button>
-                      
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={handleDownload}
-                      >
+                      <Button variant="outline" size="sm" onClick={handleDownload}>
                         <Download className="mr-2 h-4 w-4" />
                         Download
                       </Button>
@@ -203,7 +184,7 @@ Alex Johnson
                   )}
                 </div>
               </div>
-              
+
               <div className="p-6 flex-grow">
                 {coverLetterContent ? (
                   isEditing ? (

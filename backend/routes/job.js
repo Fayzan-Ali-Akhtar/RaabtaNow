@@ -1,9 +1,14 @@
 import express from "express"
-import { getAllJobs, createJob, updateJob, deleteJob } from "../controllers/job.js";
+import { getAllJobs, createPost, updatePost, deletePost, createJobPost, editJobPost,deleteJobPost, getAllJobPosts } from "../controllers/job.js";
+import { join } from "path";
 
 export const jobRouter = express.Router();
 
-jobRouter.get('/', getAllJobs);
-jobRouter.post('/create', createJob);
-jobRouter.patch('/update', updateJob);
-jobRouter.delete('/delete/:id', deleteJob);
+jobRouter.get('/getposts', getAllJobs);
+jobRouter.post('/createpost', createPost);
+jobRouter.patch('/update', updatePost);
+jobRouter.delete('/delete/:id', deletePost);
+jobRouter.post('/createjobpost',createJobPost);
+jobRouter.patch('/updatejobpost',editJobPost);
+jobRouter.delete('/deletejobpost/:id',deleteJobPost);
+jobRouter.get('/getalljobposts',getAllJobPosts);

@@ -3,91 +3,32 @@ import sequelize from "../db/database.js";
 import User from "./user.js";
 
 const Job = sequelize.define("Job", {
-  type: { 
-    type: DataTypes.STRING,
+  content: {
+    type: DataTypes.TEXT, // Supports long posts
     allowNull: false,
   },
-  source: { 
-    type: DataTypes.STRING,
-    allowNull: false,
-    defaultValue: "in-app"
-  },
-  title: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  category: { 
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  description: {
-    type: DataTypes.STRING(10000),
-
-    allowNull: false,
-  },
-  employer: {  // maps to "company" on front-end
-    type: DataTypes.STRING,
+  media_url: {
+    type: DataTypes.STRING, // Image, video, doc, etc.
     allowNull: true,
   },
-  location: {  // maps to city and country on front-end
-    type: DataTypes.STRING,
+  media_type: {
+    type: DataTypes.STRING, // 'image', 'video', 'file', etc.
     allowNull: true,
   },
-  contact: { 
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  min_salary: { 
-    type: DataTypes.DOUBLE,
-    allowNull: true,
-  },
-  max_salary: { 
-    type: DataTypes.DOUBLE,
-    allowNull: true,
-  },
-  employment: { // remote or on-site
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  experience: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  website: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  email_address: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  phone_number: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  logo: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  additional_file: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  view_count: { 
+  likes: {
     type: DataTypes.INTEGER,
-    allowNull: false,
     defaultValue: 0,
   },
-  application_count: { 
+  comments_count: {
     type: DataTypes.INTEGER,
-    allowNull: false,
     defaultValue: 0,
   },
 }, {
   timestamps: true,
+  tableName: 'Jobs'
 });
 
-Job.belongsTo(User, { foreignKey: 'posted_by' });
-User.hasMany(Job, { foreignKey: 'posted_by' });
+Job.belongsTo(User, { foreignKey: 'author_id' });
+User.hasMany(Job, { foreignKey: 'author_id' });
 
 export default Job;

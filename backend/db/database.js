@@ -1,8 +1,17 @@
 import { Sequelize } from "sequelize";
 
 // Load environment variables from config.env
+// import { config } from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { config } from 'dotenv';
-config({ path: './config.env' });
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// 🔥 Always load env from backend root
+config({ path: path.join(__dirname, '../config.env') });
+
 
  
 const isLocal = process.env.DB_ENV === "local";

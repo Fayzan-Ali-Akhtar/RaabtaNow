@@ -9,6 +9,7 @@ import { profileRouter } from './routes/profile.js';
 
 
 config({ path: './config.env' });
+// await sequelize.sync({ force: false }); // no drop
  
 const app = express();
 
@@ -27,7 +28,9 @@ app.get("/hello", (req, res) => {
 
 // Routes
 app.use('/user', userRouter);
-app.use('/job', verifyToken, jobRouter);
+// app.use('/api', verifyToken, jobRouter); //---> uncomment when token logit added
+app.use('/api', jobRouter);
+
 app.use('/profile', verifyToken, profileRouter);
 
 const PORT = process.env.PORT || 9000; 
