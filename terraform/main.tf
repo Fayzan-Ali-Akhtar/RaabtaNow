@@ -5,6 +5,14 @@ data "aws_vpc" "default" {
   default = true
 }
 
+# 1a. Fetch all subnet IDs in that VPC
+data "aws_subnets" "default" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
+}
+
 # 2. Fetch Latest Amazon Linux 2023 AMI via SSM
 data "aws_ssm_parameter" "al2023_ami" {
   name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
@@ -19,34 +27,6 @@ module "cognito" {
   # …any other cognito inputs…
 }
 
-# 4. Then EC2 — depends_on ensures Terraform orders them
-module "ec2_backend" {
-  source               = "./modules/ec2"
-  depends_on           = [
-    module.cognito,     # Cognito must finish first
-    module.rds,         # wait for RDS fully provisioned
-  ]
-  project_name         = var.project_name
-  aws_region           = var.aws_region
-  ami_id               = data.aws_ssm_parameter.al2023_ami.value
-  instance_type        = var.instance_type
-  vpc_id               = data.aws_vpc.default.id
-  github_repo_url      = var.github_repo_url
-  github_backend_path  = var.github_backend_path
-
-  # pass Cognito outputs into EC2
-  cognito_user_pool_id = module.cognito.user_pool_id
-  cognito_user_pool_arn = module.cognito.user_pool_arn
-  cognito_client_id    = module.cognito.user_pool_client_id
-
-  # pass RDS outputs into EC2
-  db_endpoint   = module.rds.endpoint
-  db_port       = module.rds.port
-  db_name       = module.rds.db_name
-  db_username   = module.rds.username
-  db_password   = module.rds.password
-}
-
 module "rds" {
   source       = "./modules/rds"
   project_name = var.project_name
@@ -55,14 +35,45 @@ module "rds" {
   # you may override db_name/db_username/etc here if you like
 }
 
-# 4) After everything, write backend/.env
+# 1️⃣ ALB Module (incl. self-signed TLS ACM import)
+module "alb" {
+  source       = "./modules/alb"
+  project_name = var.project_name
+  vpc_id       = data.aws_vpc.default.id
+  subnet_ids   = data.aws_subnets.default.ids
+}
+
+# 2️⃣ ASG Module (behind the ALB’s Target Group)
+module "asg" {
+  source               = "./modules/asg"
+  project_name         = var.project_name
+  aws_region           = var.aws_region
+  ami_id               = data.aws_ssm_parameter.al2023_ami.value
+  instance_type        = var.instance_type
+  subnet_ids           = data.aws_subnets.default.ids
+  vpc_id              = data.aws_vpc.default.id
+
+  github_repo_url      = var.github_repo_url
+  github_backend_path  = var.github_backend_path
+
+  cognito_user_pool_id = module.cognito.user_pool_id
+  cognito_client_id    = module.cognito.user_pool_client_id
+
+  db_endpoint          = module.rds.endpoint
+  db_port              = module.rds.port
+  db_name              = module.rds.db_name
+  db_username          = module.rds.username
+  db_password          = module.rds.password
+
+  alb_sg_id            = module.alb.alb_security_group_id
+  target_group_arn     = module.alb.target_group_arn
+}
+
+# Write backend/.env
 resource "local_file" "backend_env" {
-  depends_on = [
-    module.cognito,
-    module.rds,
-  ]
-  filename = "${path.module}/../backend/.env"
-  content  = <<-EOF
+  depends_on = [module.cognito, module.rds]
+  filename   = "${path.module}/../backend/.env"
+  content    = <<-EOF
     AWS_REGION=${var.aws_region}
     COGNITO_USER_POOL_ID=${module.cognito.user_pool_id}
     COGNITO_CLIENT_ID=${module.cognito.user_pool_client_id}
@@ -71,28 +82,14 @@ resource "local_file" "backend_env" {
     DB_NAME=${module.rds.db_name}
     DB_USERNAME=${module.rds.username}
     DB_PASSWORD=${module.rds.password}
-    EOF
+  EOF
 }
 
 module "frontend" {
   source       = "./modules/frontend"
   project_name = var.project_name
   aws_region   = var.aws_region
-  # this must point at your local frontend folder
   frontend_dir = "${path.root}/../frontend"
-
-  backend_url = module.ec2_backend.backend_url
-
-  depends_on   = [
-    module.ec2_backend,  # wait for backend & its .env
-  ]
-}
-
-# Adding .env file in frontend folder
-resource "local_file" "frontend_env" {
-  depends_on = [ module.ec2_backend ]      # ensure we know the backend URL
-  filename   = "${path.module}/../frontend/.env.production"
-  content    = <<-EOF
-VITE_BACKEND_URL=${module.ec2_backend.backend_url}
-EOF
+  backend_url = "https://${module.alb.alb_dns_name}"
+  depends_on   = [module.asg]
 }

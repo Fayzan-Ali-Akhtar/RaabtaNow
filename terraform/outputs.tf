@@ -1,14 +1,4 @@
 # root/outputs.tf
-output "backend_public_dns" {
-  description = "Public DNS of the EC2 instance"
-  value       = module.ec2_backend.backend_public_dns
-}
-
-output "backend_url" {
-  description = "HTTP URL for your service"
-  value       = "http://${module.ec2_backend.backend_public_dns}:3000"
-}
-
 output "cognito_user_pool_id" {
   description = "ID of the Cognito User Pool"
   value       = module.cognito.user_pool_id
@@ -58,4 +48,19 @@ output "frontend_bucket" {
 output "frontend_url" {
   value       = module.frontend.cloudfront_domain_name
   description = "CloudFront URL serving your frontend"
+}
+
+output "alb_dns_name" {
+  description = "ALB DNS"
+  value       = module.alb.alb_dns_name
+}
+
+output "alb_certificate_arn" {
+  description = "Imported ACM cert ARN"
+  value       = module.alb.certificate_arn
+}
+
+output "backend_url" {
+  description = "HTTPS URL to backend"
+  value       = "https://${module.alb.alb_dns_name}"
 }

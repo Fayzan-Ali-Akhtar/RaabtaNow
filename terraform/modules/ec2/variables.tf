@@ -55,3 +55,23 @@ variable "db_port" { type = number }
 variable "db_name" { type = string }
 variable "db_username" { type = string }
 variable "db_password" { type = string }
+
+variable "certificate_domain" {
+  description = "The primary domain name for the ALB certificate (e.g. www.example.com)"
+  type        = string
+}
+
+variable "certificate_sans" {
+  description = "Any additional Subject Alternative Names for the certificate"
+  type        = list(string)
+  default     = []
+}
+
+variable "destroy_acm" {
+  description = <<-EOF
+    When set to true, allows Terraform to destroy the ACM certificate.
+    By default this is false, so the certificate is preserved across destroys.
+    EOF
+  type    = bool
+  default = false
+}
