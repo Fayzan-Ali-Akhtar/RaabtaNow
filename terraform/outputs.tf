@@ -1,12 +1,13 @@
 # root/outputs.tf
-output "backend_public_dns" {
-  description = "Public DNS of the EC2 instance"
-  value       = module.ec2_backend.backend_public_dns
+output "backend_lb_dns_name" {
+  description = "DNS name of your Application Load Balancer"
+  value       = module.ec2_backend.backend_lb_dns_name
 }
 
 output "backend_url" {
-  description = "HTTP URL for your service"
-  value       = "http://${module.ec2_backend.backend_public_dns}:3000"
+  description = "HTTPS URL for your backend service"
+  value       = module.ec2_backend.backend_url
+  # value       = "http://${module.ec2_backend.backend_public_dns}:3000"
 }
 
 output "cognito_user_pool_id" {
@@ -58,4 +59,15 @@ output "frontend_bucket" {
 output "frontend_url" {
   value       = module.frontend.cloudfront_domain_name
   description = "CloudFront URL serving your frontend"
+}
+
+variable "backend_domain_name" {
+  description = "The DNS name you want to serve your backend on (e.g. api.example.com)"
+  type        = string
+}
+
+# Output the addresses ACM will email to:
+output "certificate_validation_emails" {
+  description = "ACM sent validation emails to these addresses — click the link to issue."
+  value       = aws_acm_certificate.backend.domain_validation_options[*].validation_emails
 }

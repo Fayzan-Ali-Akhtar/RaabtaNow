@@ -1,10 +1,11 @@
 # root/modules/ec2/outputs.tf
-output "backend_public_dns" {
-  description = "Public DNS of the EC2 instance"
-  value       = aws_instance.this.public_dns
+output "backend_lb_dns_name" {
+  description = "DNS name of the ALB (HTTPS endpoint)"
+  value       = aws_lb.this.dns_name
 }
 
 output "backend_url" {
-  description = "Full HTTP URL"
-  value       = "http://${aws_instance.this.public_dns}:3000"
+  description = "HTTPS url to your backend"
+  value       = "https://${aws_lb.this.dns_name}"
 }
+

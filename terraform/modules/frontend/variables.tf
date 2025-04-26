@@ -1,20 +1,20 @@
-# root/module/frontend/variables.tf
+# modules/frontend/variables.tf
 variable "project_name" {
-  description = "Used to name the S3 bucket"
   type        = string
+  description = "Used to prefix all resources"
 }
 
 variable "aws_region" {
-  description = "AWS region"
   type        = string
+  description = "AWS region"
 }
 
 variable "frontend_dir" {
-  description = "Absolute path to the local frontend folder"
   type        = string
+  description = "Local path to your frontend project"
 }
 
-variable "backend_url" {
-  description = "The HTTP URL for our deployed backend"
+variable "backend_domain_name" {
   type        = string
+  description = "The DNS name of your HTTP-only ALB (e.g. module.ec2_backend.backend_lb_dns_name)"
 }

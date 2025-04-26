@@ -25,6 +25,11 @@ variable "vpc_id" {
   type        = string
 }
 
+variable "subnet_ids" {
+  description = "List of public subnet IDs for ALB"
+  type        = list(string)
+}
+
 variable "github_repo_url" {
   description = "GitHub repo URL containing the backend code"
   type        = string

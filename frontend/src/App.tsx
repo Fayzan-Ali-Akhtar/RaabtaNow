@@ -12,7 +12,7 @@ function App() {
     setBackendUrl(backendUrl);
     console.log('Fetching backend message...')
     console.log(`Backend URL: ${backendUrl}`)
-    fetch(backendUrl)
+    fetch("/api/")
       .then(res => res.text())
       .then(text => setBackendMsg(text))
       .catch(err => {

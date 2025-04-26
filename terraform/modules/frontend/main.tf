@@ -22,7 +22,7 @@ resource "aws_s3_bucket_public_access_block" "this" {
 # 3) Build & deploy your Vite app
 resource "local_file" "frontend_env" {
   filename = "${var.frontend_dir}/.env.production"
-  content  = "VITE_BACKEND_URL=${var.backend_url}\n"
+  content  = "VITE_BACKEND_URL=${var.backend_domain_name}\n"
 }
 
 resource "null_resource" "deploy" {
@@ -66,17 +66,31 @@ resource "aws_cloudfront_distribution" "this" {
   price_class         = "PriceClass_100"
   default_root_object = "index.html"                # ← serve index.html at /
 
-  origin {
-    domain_name = aws_s3_bucket.this.bucket_regional_domain_name
-    origin_id   = "S3-${aws_s3_bucket.this.id}"
+ # Static files origin
+origin {
+  origin_id   = "s3-origin"
+  domain_name = aws_s3_bucket.this.bucket_regional_domain_name
 
-    s3_origin_config {
-      origin_access_identity = aws_cloudfront_origin_access_identity.oai.cloudfront_access_identity_path
-    }
+  s3_origin_config {
+    origin_access_identity = aws_cloudfront_origin_access_identity.oai.cloudfront_access_identity_path
   }
+}
+
+# API origin (your ALB DNS, HTTP-only)
+origin {
+  origin_id   = "api-origin"
+  domain_name = var.backend_domain_name
+
+  custom_origin_config {
+    origin_protocol_policy = "http-only"
+    http_port              = 80
+    https_port             = 443
+    origin_ssl_protocols   = ["TLSv1.2"]
+  }
+}
 
   default_cache_behavior {
-    target_origin_id       = "S3-${aws_s3_bucket.this.id}"
+    target_origin_id       = "s3-origin"
     viewer_protocol_policy = "redirect-to-https"
 
     allowed_methods = ["GET", "HEAD", "OPTIONS"]
@@ -92,16 +106,21 @@ resource "aws_cloudfront_distribution" "this" {
     max_ttl     = 86400
   }
 
-  # for SPA routing: return index.html on 403
+# anything under /api/ → proxy to your ALB over HTTP
   ordered_cache_behavior {
-    path_pattern           = "*.html"
-    target_origin_id       = "S3-${aws_s3_bucket.this.id}"
-    viewer_protocol_policy = "redirect-to-https"
-    allowed_methods        = ["GET","HEAD","OPTIONS"]
-    cached_methods         = ["GET","HEAD"]
+    path_pattern            = "/api/*"
+    target_origin_id        = "api-origin"
+    viewer_protocol_policy  = "redirect-to-https"
+
+    allowed_methods = ["GET","HEAD","OPTIONS","PUT","POST","PATCH","DELETE"]
+    cached_methods  = ["GET","HEAD"]
+
     forwarded_values {
-      query_string = false
-      cookies { forward = "none" }
+      query_string = true
+      headers      = ["Authorization","Content-Type"]   # if you need auth
+      cookies {
+        forward = "all"
+      }
     }
   }
 
