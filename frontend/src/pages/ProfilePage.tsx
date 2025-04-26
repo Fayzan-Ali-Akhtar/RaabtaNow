@@ -12,6 +12,8 @@ import { PostCard } from "@/components/ui/post-card";
 import { JobCard } from "@/components/ui/job-card";
 import { useAuth } from "@/context/AuthContext";
 import { BASE_URL } from "../../constants.ts";
+import { VITE_BACKEND_URL } from "@/constant";
+
 
 const ProfilePage = () => {
   const { toast } = useToast();
@@ -50,16 +52,16 @@ const ProfilePage = () => {
         const token = getAuthToken();
         const [profileRes, postsRes, jobPostsRes, resumesRes] =
           await Promise.all([
-            axios.get("/api/getprofile", {
+            axios.get(`${VITE_BACKEND_URL}/api/getprofile`, {
               headers: { Authorization: `Bearer ${token}` },
             }),
-            axios.get("/api/myposts", {
+            axios.get(`${VITE_BACKEND_URL}/api/myposts`, {
               headers: { Authorization: `Bearer ${token}` },
             }),
-            axios.get("/api/myjobposts", {
+            axios.get(`${VITE_BACKEND_URL}/api/myjobposts`, {
               headers: { Authorization: `Bearer ${token}` },
             }),
-            axios.get("/api/myresumes", {
+            axios.get(`${VITE_BACKEND_URL}/api/myresumes`, {
               headers: { Authorization: `Bearer ${token}` },
             }), // 🔥
           ]);
@@ -92,7 +94,7 @@ const ProfilePage = () => {
     try {
       const token = getAuthToken();
       const res = await axios.patch(
-        "/api/update",
+        `${VITE_BACKEND_URL}/api/update`,
         { id: editingPostId, content: editingPostContent },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -112,7 +114,7 @@ const ProfilePage = () => {
   const handleDeletePost = async (postId) => {
     try {
       const token = getAuthToken();
-      await axios.delete(`/api/delete/${postId}`, {
+      await axios.delete(`${VITE_BACKEND_URL}/api/delete/${postId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUserPosts(userPosts.filter((post) => post.id !== postId));
@@ -139,7 +141,7 @@ const ProfilePage = () => {
     try {
       const token = getAuthToken();
       const res = await axios.patch(
-        "/api/updatejobpost",
+        `${VITE_BACKEND_URL}/api/updatejobpost`,
         { id: editingJobId, ...editingJobFields },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -158,7 +160,7 @@ const ProfilePage = () => {
   const handleDeleteJobPost = async (jobId) => {
     try {
       const token = getAuthToken();
-      await axios.delete(`/api/deletejobpost/${jobId}`, {
+      await axios.delete(`${VITE_BACKEND_URL}/api/deletejobpost/${jobId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUserJobPosts(userJobPosts.filter((job) => job.id !== jobId));
@@ -176,7 +178,7 @@ const ProfilePage = () => {
         const formData = new FormData();
         formData.append("resume", file);
 
-        const res = await axios.post("/api/uploadresume", formData, {
+        const res = await axios.post(`${VITE_BACKEND_URL}/api/uploadresume`, formData, {
           headers: {
             Authorization: `Bearer ${getAuthToken()}`,
             "Content-Type": "multipart/form-data",
@@ -194,7 +196,7 @@ const ProfilePage = () => {
 
   const handleDeleteResume = async (resumeId: number) => {
     try {
-      await axios.delete(`/api/deleteresume/${resumeId}`, {
+      await axios.delete(`${VITE_BACKEND_URL}/api/deleteresume/${resumeId}`, {
         headers: { Authorization: `Bearer ${getAuthToken()}` },
       });
 
@@ -210,7 +212,7 @@ const ProfilePage = () => {
 
   const handleSaveProfile = async () => {
     try {
-      await axios.patch("/api/updateprofile", profileData, {
+      await axios.patch(`${VITE_BACKEND_URL}/api/updateprofile`, profileData, {
         headers: { Authorization: `Bearer ${getAuthToken()}` },
       });
       toast({ title: "Profile updated successfully" });

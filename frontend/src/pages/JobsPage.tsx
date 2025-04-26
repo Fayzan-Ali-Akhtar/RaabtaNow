@@ -16,6 +16,7 @@ import { Search } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
+import { VITE_BACKEND_URL } from "@/constant"; 
 
 const JobsPage = () => {
   const currentUserId = 1; // Replace this with user session later
@@ -114,7 +115,7 @@ const JobsPage = () => {
 
   const handleSubmitEdit = async () => {
     try {
-      const res = await axios.patch("/api/updatejobpost", {
+      const res = await axios.patch(`${VITE_BACKEND_URL}/api/updatejobpost`, {
         id: editingJobId,
         ...editingFields,
       },{headers: {
@@ -140,7 +141,7 @@ const JobsPage = () => {
 
   const handleDeleteJob = async (jobId) => {
     try {
-      await axios.delete(`/api/deletejobpost/${jobId}`,{headers: {
+      await axios.delete(`${VITE_BACKEND_URL}/api/deletejobpost/${jobId}`,{headers: {
         Authorization: `Bearer ${getAuthToken()}`
       }});
       const updated = jobs.filter((job) => job.id !== jobId);

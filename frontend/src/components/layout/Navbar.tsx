@@ -4,8 +4,27 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Menu, X } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext'; // ✅ import useAuth
+import { useEffect } from "react";
+import { VITE_BACKEND_URL } from "@/constant"; // ✅ import backend URL
 
 const Navbar = () => {
+  const [backendMsg, setBackendMsg] = useState<string>('Loading…')
+  const [backendUrl, setBackendUrl] = useState<string>('Finding backend URL...')
+  
+  useEffect(() => {
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || VITE_BACKEND_URL
+    setBackendUrl(backendUrl);
+    console.log('Fetching backend message...')
+    console.log(`Backend URL: ${backendUrl}`)
+    fetch(backendUrl)
+      .then(res => res.text())
+      .then(text => setBackendMsg('✅'))
+      .catch(err => {
+        console.error(err)
+        setBackendMsg('❌')
+      })
+  }, [])
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate(); // ✅ for redirect after logout

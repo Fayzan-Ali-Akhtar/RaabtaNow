@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PostCard } from "@/components/ui/post-card";
 import MainLayout from "@/components/layout/MainLayout";
 import { useAuth } from "@/context/AuthContext"; // 👈 Import useAuth
+import {VITE_BACKEND_URL} from "@/constant"; // 👈 Import backend URL
 
 const FeedPage = () => {
   const { toast } = useToast();
@@ -43,7 +44,7 @@ const FeedPage = () => {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const res = await axios.get("/api/getposts", {
+        const res = await axios.get(`${VITE_BACKEND_URL}/api/getposts`, {
           headers: {
             Authorization: `Bearer ${getAuthToken()}`,
           },
@@ -84,7 +85,7 @@ const FeedPage = () => {
 
     try {
       const res = await axios.post(
-        "/api/createpost",
+        `${VITE_BACKEND_URL}/api/createpost`,
         {
           content: newPostContent,
           author_id: user?.id,
@@ -127,7 +128,7 @@ const FeedPage = () => {
 
     try {
       const res = await axios.post(
-        "/api/createjobpost",
+        `${VITE_BACKEND_URL}/api/createjobpost`,
         {
           title: jobTitle,
           description: jobDescription,
@@ -164,7 +165,7 @@ const FeedPage = () => {
 
   const handleDeletePost = async (postId: string) => {
     try {
-      await axios.delete(`/api/delete/${postId}`, {
+      await axios.delete(`${VITE_BACKEND_URL}/api/delete/${postId}`, {
         headers: {
           Authorization: `Bearer ${getAuthToken()}`,
         },
@@ -191,7 +192,7 @@ const FeedPage = () => {
   const submitEditPost = async () => {
     try {
       const res = await axios.patch(
-        "/api/update",
+        `${VITE_BACKEND_URL}/api/update`,
         {
           id: editingPostId,
           content: editingContent,
