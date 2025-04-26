@@ -66,43 +66,14 @@ resource "aws_lb_listener" "http" {
   }
 }
 
-# ────────────────────────────────────────────────────────────────────────────────
-# Self-signed TLS + import to ACM
-# ────────────────────────────────────────────────────────────────────────────────
-resource "tls_private_key" "key" {
-  algorithm = "RSA"
-  rsa_bits  = 2048
-}
-
-resource "tls_self_signed_cert" "cert" {
-  depends_on           = [aws_lb.this]
-  private_key_pem      = tls_private_key.key.private_key_pem
-  subject { common_name = aws_lb.this.dns_name }
-  allowed_uses         = ["key_encipherment","digital_signature","server_auth"]
-  validity_period_hours = 8760
-  is_ca_certificate     = false
-}
-
-resource "aws_acm_certificate" "imported" {
-  depends_on       = [tls_self_signed_cert.cert]
-  certificate_body = tls_self_signed_cert.cert.cert_pem
-  private_key      = tls_private_key.key.private_key_pem
-
-#   lifecycle { prevent_destroy = true }
-
-  tags = {
-    Name    = "${var.project_name}-alb-cert"
-    Project = var.project_name
-  }
-}
-
-# HTTPS listener
+# HTTPS listener using the self-signed cert you passed in
 resource "aws_lb_listener" "https" {
   load_balancer_arn = aws_lb.this.arn
   port              = 443
   protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-2016-08"
-  certificate_arn   = aws_acm_certificate.imported.arn
+  certificate_arn   = var.aws_acm_certificate_arn
+
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.tg.arn

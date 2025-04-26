@@ -13,6 +13,19 @@ data "aws_subnets" "default" {
   }
 }
 
+# ———————————————————————————————————————————————————————————————
+# 0️⃣ Self-Signed Certificate (pre-generated .crt/.key in repo)
+# ———————————————————————————————————————————————————————————————
+resource "aws_acm_certificate" "self_signed" {
+  private_key      = file("${path.root}/self_signed.key")
+  certificate_body = file("${path.root}/self_signed.crt")
+
+  tags = {
+    Name    = "${var.project_name}-selfsigned-cert"
+    Project = var.project_name
+  }
+}
+
 # 2. Fetch Latest Amazon Linux 2023 AMI via SSM
 data "aws_ssm_parameter" "al2023_ami" {
   name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
@@ -41,6 +54,8 @@ module "alb" {
   project_name = var.project_name
   vpc_id       = data.aws_vpc.default.id
   subnet_ids   = data.aws_subnets.default.ids
+
+   aws_acm_certificate_arn  = aws_acm_certificate.self_signed.arn
 }
 
 # 2️⃣ ASG Module (behind the ALB’s Target Group)
