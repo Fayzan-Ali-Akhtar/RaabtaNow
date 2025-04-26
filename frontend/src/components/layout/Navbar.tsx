@@ -1,28 +1,28 @@
-
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Menu, X } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext'; // ✅ import useAuth
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate(); // ✅ for redirect after logout
   const { toast } = useToast();
-  
-  // Mock authentication status - in a real app, this would be handled by context/state management
-  const isAuthenticated = false;
+  const { user, logout, isAuthenticated } = useAuth(); // ✅ get user and logout
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
   const handleLogout = () => {
-    // Mock logout - would be handled by auth service in a real app
+    logout(); // ✅ logout user
     toast({
       title: "Logged out",
       description: "You have been successfully logged out.",
     });
+    navigate('/login'); // ✅ redirect to login
   };
 
   return (
@@ -58,13 +58,13 @@ const Navbar = () => {
                 </Link>
               )}
             </div>
-            
+
             <div className="flex items-center space-x-2">
               {isAuthenticated ? (
                 <>
                   <Link to="/profile">
                     <div className="w-8 h-8 rounded-full bg-worklink-100 flex items-center justify-center text-worklink-700 font-semibold border border-worklink-200">
-                      U
+                      {user?.name?.charAt(0).toUpperCase() || "U"}
                     </div>
                   </Link>
                   <Button variant="ghost" onClick={handleLogout}>Logout</Button>

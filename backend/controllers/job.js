@@ -6,18 +6,42 @@ import User from '../models/user.js';
 
 export const getAllJobs = async (req, res) => {
   try {
-    const jobs = await Job.findAll();
-    // console.log("🔄 Returning jobs:", jobs);
+    console.log("📩 [Request] getAllJobs called");
+
+    const jobs = await Job.findAll({
+      include: [{
+        model: User,
+        as: 'author',
+        attributes: ['id', 'name', 'email'],
+      }],
+      order: [['createdAt', 'DESC']],
+    });
+
+    console.log(`📝 [Fetched] Total jobs fetched: ${jobs.length}`);
+
+    jobs.forEach((job, index) => {
+      console.log(`🔍 Job ${index + 1}:`, {
+        id: job.id,
+        content: job.content,
+        author: job.author ? {
+          id: job.author.id,
+          name: job.author.name,
+          email: job.author.email
+        } : "❌ No Author Found"
+      });
+    });
+
     return res.status(200).json({
       success: true,
       message: "Jobs retrieved successfully",
-      jobs: jobs || []
+      jobs: jobs || [],
     });
+
   } catch (error) {
-    console.error("Error in getAllJobs:", error);
+    console.error("🚨 Error in getAllJobs:", error);
     return res.status(500).json({
       success: false,
-      message: "An error occurred while fetching jobs"
+      message: "An error occurred while fetching jobs",
     });
   }
 };
@@ -25,9 +49,8 @@ export const getAllJobs = async (req, res) => {
 export const createPost = async (req, res) => {
   try {
     const { content, media_url, media_type } = req.body;
-    // const author_id = req.user?.id; // recommended over trusting req.body //-------> uncomment when token added
+    // const author_id = req.user?.id; // recommended when token added
     const author_id = req.user?.id || req.body.author_id;
-
 
     if (!content || !author_id) {
       return res.status(400).json({
@@ -36,6 +59,7 @@ export const createPost = async (req, res) => {
       });
     }
 
+    // 1. Create the Job
     const newJob = await Job.create({
       content,
       media_url: media_url || null,
@@ -43,13 +67,23 @@ export const createPost = async (req, res) => {
       author_id,
     });
 
+    // 2. Fetch again including author info
+    const postWithAuthor = await Job.findOne({
+      where: { id: newJob.id },
+      include: [{
+        model: User,
+        as: "author",
+        attributes: ["id", "name", "email"], // only show safe fields
+      }],
+    });
+
     return res.status(201).json({
       success: true,
       message: "Post created successfully",
-      job: newJob,
+      job: postWithAuthor,
     });
   } catch (error) {
-    console.error("Error in createPost:", error);
+    console.error("❌ Error in createPost:", error);
     return res.status(500).json({
       success: false,
       message: "An error occurred while creating the post",
@@ -60,30 +94,46 @@ export const createPost = async (req, res) => {
 export const updatePost = async (req, res) => {
   try {
     const { id, ...content } = req.body;
+
     if (!id) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Job ID is required for updating" });
+      return res.status(400).json({
+        success: false,
+        message: "Job ID is required for updating",
+      });
     }
 
     const job = await Job.findByPk(id);
+
     if (!job) {
-      return res
-        .status(404)
-        .json({ success: false, message: "No job found with this ID" });
+      return res.status(404).json({
+        success: false,
+        message: "No job found with this ID",
+      });
     }
 
+    // 1. Update the post
     await job.update({ ...content });
+
+    // 2. Fetch again with author included
+    const updatedJobWithAuthor = await Job.findOne({
+      where: { id: job.id },
+      include: [{
+        model: User,
+        as: "author",
+        attributes: ["id", "name", "email"],
+      }],
+    });
+
     return res.status(200).json({
       success: true,
       message: "Job updated successfully",
-      job
+      job: updatedJobWithAuthor,
     });
   } catch (error) {
-    console.error("Error in updatePost:", error);
+    console.error("❌ Error in updatePost:", error);
     return res.status(500).json({
       success: false,
-      message: "An error occurred while updating job"
+      message: "An error occurred while updating job",
     });
   }
 };
@@ -241,5 +291,40 @@ export const getAllJobPosts = async (req, res) => {
       success: false,
       message: "An error occurred while fetching job posts"
     });
+  }
+};
+
+
+export const getMyPosts = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const myPosts = await Job.findAll({
+      where: { author_id: userId },
+      order: [['createdAt', 'DESC']],
+    });
+
+    return res.status(200).json({ success: true, posts: myPosts });
+  } catch (error) {
+    console.error("Error fetching my posts:", error);
+    return res.status(500).json({ success: false, message: "Server Error" });
+  }
+};
+
+
+
+export const getMyJobPosts = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const myJobPosts = await JobPost.findAll({
+      where: { author_id: userId },
+      order: [['createdAt', 'DESC']],
+    });
+
+    return res.status(200).json({ success: true, jobPosts: myJobPosts });
+  } catch (error) {
+    console.error("Error fetching my job posts:", error);
+    return res.status(500).json({ success: false, message: "Server Error" });
   }
 };

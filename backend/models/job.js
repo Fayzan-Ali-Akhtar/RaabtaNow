@@ -1,23 +1,27 @@
+// models/job.js
 import { DataTypes } from "sequelize";
 import sequelize from "../db/database.js";
-import User from "./user.js";
 
 const Job = sequelize.define("Job", {
   content: {
-    type: DataTypes.TEXT, // Supports long posts
+    type: DataTypes.TEXT,
     allowNull: false,
   },
   media_url: {
-    type: DataTypes.STRING, // Image, video, doc, etc.
+    type: DataTypes.STRING,
     allowNull: true,
   },
   media_type: {
-    type: DataTypes.STRING, // 'image', 'video', 'file', etc.
+    type: DataTypes.STRING,
     allowNull: true,
   },
   likes: {
     type: DataTypes.INTEGER,
     defaultValue: 0,
+  },
+  author_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
   },
   comments_count: {
     type: DataTypes.INTEGER,
@@ -27,8 +31,5 @@ const Job = sequelize.define("Job", {
   timestamps: true,
   tableName: 'Jobs'
 });
-
-Job.belongsTo(User, { foreignKey: 'author_id' });
-User.hasMany(Job, { foreignKey: 'author_id' });
 
 export default Job;

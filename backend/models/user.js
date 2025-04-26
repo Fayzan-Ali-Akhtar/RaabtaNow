@@ -1,5 +1,7 @@
+// models/user.js
 import { DataTypes } from "sequelize";
 import sequelize from "../db/database.js";
+
 
 const User = sequelize.define("User", {
   name: {
@@ -24,13 +26,12 @@ const User = sequelize.define("User", {
     type: DataTypes.STRING,
     allowNull: true,
   },
-  restTokenExp: {
+  resetTokenExp: {  // minor typo fixed from restTokenExp to resetTokenExp
     type: DataTypes.DATE,
     allowNull: true,
   }
 }, {
   tableName: 'Users'
 });
-
 
 export default User;

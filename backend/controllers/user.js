@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { config } from "dotenv";
 import User from "../models/user.js";
+import { Profile } from "../models/profile.js";
 import { saltRounds } from "../utils/config.js";
 import { anyValueIsEmpty } from "../utils/validations.js";
 import crypto from "crypto";
@@ -13,67 +14,95 @@ export const registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    console.log("Registering user with data:", req.body);
+    console.log("🔵 Incoming signup data:", { name, email, password });
 
-    if (
-      anyValueIsEmpty(name) ||
-      anyValueIsEmpty(email) ||
-      anyValueIsEmpty(password) ) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Please provide all fields" });
+    // Debugging fields
+    console.log("🧪 Debugging Fields:");
+    console.log("- Name Empty:", anyValueIsEmpty(name));
+    console.log("- Email Empty:", anyValueIsEmpty(email));
+    console.log("- Password Empty:", anyValueIsEmpty(password));
+    console.log("- Password Length:", password ? password.length : "No password");
+
+    // Field Validations
+    if (anyValueIsEmpty(name) || anyValueIsEmpty(email) || anyValueIsEmpty(password)) {
+      console.warn("⚠️ Validation Failed: Missing fields");
+      return res.status(400).json({
+        success: false,
+        message: "Please fill in all required fields (name, email, password).",
+      });
     }
 
     if (password.length < 8) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Passwords lenght not matches required length of 8 chars" });
+      console.warn("⚠️ Validation Failed: Password too short");
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 8 characters long.",
+      });
     }
 
+    // Check if user already exists
     const userExists = await User.findOne({ where: { email } });
-
     if (userExists) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "User already exists, try another email",
-        });
+      console.warn("⚠️ User already exists with email:", email);
+      return res.status(400).json({
+        success: false,
+        message: "Email already registered. Try another email.",
+      });
     }
 
-    const encryptedPass = await bcrypt.hash(password, saltRounds);
+    // Encrypt password
+    const encryptedPassword = await bcrypt.hash(password, saltRounds);
 
+    // Create new user
     const newUser = await User.create({
-      name: name,
-      email: email,
-      password: encryptedPass,
+      name,
+      email,
+      password: encryptedPassword,
     });
 
+    // ✨ Create default Profile immediately
+    await Profile.create({
+      user_id: newUser.id,
+      full_name: name,
+      contact_email: email,
+      location: "",
+      company: "",
+      professional_headline: "",
+      skills: [],
+      working_experience: 0,
+      bio: "",
+      age : 0,
+    });
+
+    // Generate JWT Token
     const token = jwt.sign(
-      { id: newUser.id, email: newUser.email },
+      { id: newUser.id, email: newUser.email, name: newUser.name },
       process.env.SECRET_KEY,
       { expiresIn: "1h" }
     );
 
-    return res
-      .status(201)
-      .json({
-        success: true,
-        message: "User created successfully",
-        user: newUser,
-        token,
-      });
+    console.log("✅ User and Profile created successfully:", { id: newUser.id, email: newUser.email, name: newUser.name });
+
+    return res.status(201).json({
+      success: true,
+      message: "User registered successfully.",
+      user: {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+      },
+      token,
+    });
+
   } catch (error) {
-    console.error("Error in registerUser:", error);
-    return res
-      .status(500)
-      .json({
-        success: false,
-        message: "An error occurred while registering user",
-      });
+    console.error("❌ Error during user registration:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error during registration. Please try again later.",
+    });
   }
 };
-
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -102,7 +131,7 @@ export const loginUser = async (req, res) => {
     }
     
     const token = jwt.sign(
-      { id: user.id, email: user.email },
+      { id: user.id, email: user.email, name: user.name },
       process.env.SECRET_KEY,
       { expiresIn: "1h" }
     );

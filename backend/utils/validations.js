@@ -7,9 +7,13 @@ function isEmpty(value) {
   );
 }
 
-export function anyValueIsEmpty(obj) {
-  return Object.values(obj).some(isEmpty);
-}
+export const anyValueIsEmpty = (value) => {
+  if (typeof value !== "string") {
+    return value === undefined || value === null;
+  }
+  return value.trim() === "";
+};
+
 
 
 export function missingRequiredField(content, requiredFields){

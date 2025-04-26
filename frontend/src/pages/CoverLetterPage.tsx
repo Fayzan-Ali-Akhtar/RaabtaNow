@@ -1,34 +1,40 @@
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
-import MainLayout from '@/components/layout/MainLayout';
-import { FileText, Download, Settings } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import MainLayout from "@/components/layout/MainLayout";
+import { FileText, Download, Settings } from "lucide-react";
 
 const CoverLetterPage = () => {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [jobTitle, setJobTitle] = useState('');
-  const [companyName, setCompanyName] = useState('');
-  const [selectedResume, setSelectedResume] = useState('');
+  const [jobTitle, setJobTitle] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [selectedResume, setSelectedResume] = useState("");
   const [isReadOnly, setIsReadOnly] = useState(false);
-  const [coverLetterContent, setCoverLetterContent] = useState('');
+  const [coverLetterContent, setCoverLetterContent] = useState("");
 
   const resumeOptions = [
-    { id: 'resume-1', name: 'Software_Developer_Resume.pdf' },
-    { id: 'resume-2', name: 'Marketing_Resume.pdf' }
+    { id: "resume-1", name: "Software_Developer_Resume.pdf" },
+    { id: "resume-2", name: "Marketing_Resume.pdf" },
   ];
 
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    const titleParam = searchParams.get('title');
-    const companyParam = searchParams.get('company');
+    const titleParam = searchParams.get("title");
+    const companyParam = searchParams.get("company");
 
     if (titleParam && companyParam) {
       setJobTitle(titleParam);
@@ -44,7 +50,7 @@ const CoverLetterPage = () => {
       toast({
         title: "Missing information",
         description: "Please fill in all required fields.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -74,7 +80,8 @@ Alex Johnson
 
       toast({
         title: "Cover letter generated",
-        description: "Your personalized cover letter has been created successfully."
+        description:
+          "Your personalized cover letter has been created successfully.",
       });
     }, 2500);
   };
@@ -83,18 +90,18 @@ Alex Johnson
     setIsEditing(false);
     toast({
       title: "Cover letter saved",
-      description: "Your cover letter has been saved successfully."
+      description: "Your cover letter has been saved successfully.",
     });
   };
 
   const handleDownload = () => {
     toast({
       title: "Downloading cover letter",
-      description: "Your cover letter is being prepared for download."
+      description: "Your cover letter is being prepared for download.",
     });
 
     setTimeout(() => {
-      console.log('Download logic here');
+      console.log("Download logic here");
     }, 1000);
   };
 
@@ -121,27 +128,52 @@ Alex Johnson
                     readOnly={isReadOnly}
                   />
                 </div>
-
                 <div>
                   <Label htmlFor="company-name">Company Name</Label>
-                  <Input
-                    id="company-name"
-                    placeholder="e.g., TechCorp"
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                    required
-                    readOnly={isReadOnly}
-                  />
+                  {isReadOnly ? (
+                    <Input
+                      id="company-name"
+                      value={companyName}
+                      readOnly
+                      className="w-full"
+                    />
+                  ) : (
+                    <select
+                      id="company-name"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      className="w-full p-2 mb-2 border rounded"
+                      required
+                    >
+                      <option value="">Select Company</option>
+                      <option value="Google (Alphabet Inc.)">
+                        Google (Alphabet Inc.)
+                      </option>
+                      <option value="Microsoft">Microsoft</option>
+                      <option value="Amazon">Amazon</option>
+                      <option value="Apple">Apple</option>
+                      <option value="Meta (formerly Facebook)">
+                        Meta (formerly Facebook)
+                      </option>
+                      <option value="Netflix">Netflix</option>
+                      <option value="NVIDIA">NVIDIA</option>
+                      <option value="Tesla">Tesla</option>
+                      <option value="Adobe">Adobe</option>
+                      <option value="Salesforce">Salesforce</option>
+                    </select>
+                  )}
                 </div>
-
                 <div>
                   <Label htmlFor="resume-select">Select Resume</Label>
-                  <Select value={selectedResume} onValueChange={setSelectedResume}>
+                  <Select
+                    value={selectedResume}
+                    onValueChange={setSelectedResume}
+                  >
                     <SelectTrigger id="resume-select">
                       <SelectValue placeholder="Choose a resume" />
                     </SelectTrigger>
                     <SelectContent>
-                      {resumeOptions.map(resume => (
+                      {resumeOptions.map((resume) => (
                         <SelectItem key={resume.id} value={resume.id}>
                           {resume.name}
                         </SelectItem>
@@ -149,11 +181,15 @@ Alex Johnson
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-gray-500 mt-1">
-                    Our AI will analyze your resume to personalize the cover letter.
+                    Our AI will analyze your resume to personalize the cover
+                    letter.
                   </p>
                 </div>
-
-                <Button type="submit" className="w-full" disabled={isGenerating}>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isGenerating}
+                >
                   {isGenerating ? "Generating..." : "Generate Cover Letter"}
                 </Button>
               </form>
@@ -172,11 +208,19 @@ Alex Johnson
                 <div className="flex space-x-2">
                   {coverLetterContent && (
                     <>
-                      <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsEditing(!isEditing)}
+                      >
                         <Settings className="mr-2 h-4 w-4" />
                         {isEditing ? "Preview" : "Edit"}
                       </Button>
-                      <Button variant="outline" size="sm" onClick={handleDownload}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDownload}
+                      >
                         <Download className="mr-2 h-4 w-4" />
                         Download
                       </Button>
@@ -207,9 +251,12 @@ Alex Johnson
                 ) : (
                   <div className="text-center py-16">
                     <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No cover letter generated yet</h3>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      No cover letter generated yet
+                    </h3>
                     <p className="text-gray-600 mb-4 max-w-md mx-auto">
-                      Fill out the job details on the left and click "Generate Cover Letter" to create your personalized cover letter.
+                      Fill out the job details on the left and click "Generate
+                      Cover Letter" to create your personalized cover letter.
                     </p>
                   </div>
                 )}

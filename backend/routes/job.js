@@ -1,5 +1,5 @@
 import express from "express"
-import { getAllJobs, createPost, updatePost, deletePost, createJobPost, editJobPost,deleteJobPost, getAllJobPosts } from "../controllers/job.js";
+import { getAllJobs, createPost, updatePost, deletePost, createJobPost, editJobPost,deleteJobPost, getAllJobPosts, getMyPosts,getMyJobPosts } from "../controllers/job.js";
 import { join } from "path";
 
 export const jobRouter = express.Router();
@@ -12,3 +12,5 @@ jobRouter.post('/createjobpost',createJobPost);
 jobRouter.patch('/updatejobpost',editJobPost);
 jobRouter.delete('/deletejobpost/:id',deleteJobPost);
 jobRouter.get('/getalljobposts',getAllJobPosts);
+jobRouter.get("/myposts", getMyPosts);
+jobRouter.get("/myjobposts", getMyJobPosts);

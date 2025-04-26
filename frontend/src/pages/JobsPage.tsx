@@ -1,50 +1,55 @@
-import { useEffect, useState } from 'react';
-import axios from 'axios';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
-import { JobCard } from '@/components/ui/job-card';
-import MainLayout from '@/components/layout/MainLayout';
-import { Search } from 'lucide-react';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
+  SelectValue,
+} from "@/components/ui/select";
+import { JobCard } from "@/components/ui/job-card";
+import MainLayout from "@/components/layout/MainLayout";
+import { Search } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
 
 const JobsPage = () => {
   const currentUserId = 1; // Replace this with user session later
   const { toast } = useToast();
 
+  const { user } = useAuth(); 
   const [jobs, setJobs] = useState([]);
   const [filteredJobs, setFilteredJobs] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState({
-    location: '',
-    jobType: '',
-    experience: ''
+    location: "",
+    jobType: "",
+    experience: "",
   });
-
+  const { getAuthToken } = useAuth();
   const [editingJobId, setEditingJobId] = useState(null);
   const [editingFields, setEditingFields] = useState({
-    title: '',
-    company:'',
-    description: '',
-    location: '',
-    work_type: '',
-    experience_level: ''
+    title: "",
+    company: "",
+    description: "",
+    location: "",
+    work_type: "",
+    experience_level: "",
   });
-  const [jobCompany, setJobCompany] = useState('');
-
+  const [jobCompany, setJobCompany] = useState("");
 
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const res = await axios.get('/api/getalljobposts');
+        const res = await axios.get("/api/getalljobposts",{
+          headers: {
+            Authorization: `Bearer ${getAuthToken()}`
+          }
+        });
         setJobs(res.data.jobPosts || []);
         setFilteredJobs(res.data.jobPosts || []);
       } catch (err) {
@@ -59,27 +64,30 @@ const JobsPage = () => {
     let results = [...jobs];
 
     if (searchQuery) {
-      results = results.filter(job =>
-        job.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        job.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      results = results.filter(
+        (job) =>
+          job.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          job.description?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
-    if (filters.location && filters.location !== 'all') {
-      results = results.filter(job =>
+    if (filters.location && filters.location !== "all") {
+      results = results.filter((job) =>
         job.location?.toLowerCase().includes(filters.location.toLowerCase())
       );
     }
 
-    if (filters.jobType && filters.jobType !== 'all') {
-      results = results.filter(job =>
-        job.work_type?.toLowerCase() === filters.jobType.toLowerCase()
+    if (filters.jobType && filters.jobType !== "all") {
+      results = results.filter(
+        (job) => job.work_type?.toLowerCase() === filters.jobType.toLowerCase()
       );
     }
 
-    if (filters.experience && filters.experience !== 'all') {
-      results = results.filter(job =>
-        job.experience_level?.toLowerCase() === filters.experience.toLowerCase()
+    if (filters.experience && filters.experience !== "all") {
+      results = results.filter(
+        (job) =>
+          job.experience_level?.toLowerCase() ===
+          filters.experience.toLowerCase()
       );
     }
 
@@ -87,8 +95,8 @@ const JobsPage = () => {
   };
 
   const handleResetFilters = () => {
-    setSearchQuery('');
-    setFilters({ location: '', jobType: '', experience: '' });
+    setSearchQuery("");
+    setFilters({ location: "", jobType: "", experience: "" });
     setFilteredJobs(jobs);
   };
 
@@ -96,23 +104,27 @@ const JobsPage = () => {
     setEditingJobId(job.id);
     setEditingFields({
       title: job.title,
-      company:job.company,
+      company: job.company,
       description: job.description,
       location: job.location,
       work_type: job.work_type,
-      experience_level: job.experience_level
+      experience_level: job.experience_level,
     });
   };
 
   const handleSubmitEdit = async () => {
     try {
-      const res = await axios.patch('/api/updatejobpost', {
+      const res = await axios.patch("/api/updatejobpost", {
         id: editingJobId,
-        ...editingFields
-      });
+        ...editingFields,
+      },{headers: {
+        Authorization: `Bearer ${getAuthToken()}`
+      }});
 
       const updatedJob = res.data.job;
-      const updatedList = jobs.map(j => (j.id === updatedJob.id ? updatedJob : j));
+      const updatedList = jobs.map((j) =>
+        j.id === updatedJob.id ? updatedJob : j
+      );
       setJobs(updatedList);
       setFilteredJobs(updatedList);
       setEditingJobId(null);
@@ -121,15 +133,17 @@ const JobsPage = () => {
       toast({
         title: "Update failed",
         description: err.message || "Something went wrong",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
 
   const handleDeleteJob = async (jobId) => {
     try {
-      await axios.delete(`/api/deletejobpost/${jobId}`);
-      const updated = jobs.filter(job => job.id !== jobId);
+      await axios.delete(`/api/deletejobpost/${jobId}`,{headers: {
+        Authorization: `Bearer ${getAuthToken()}`
+      }});
+      const updated = jobs.filter((job) => job.id !== jobId);
       setJobs(updated);
       setFilteredJobs(updated);
       toast({ title: "Job deleted" });
@@ -137,7 +151,7 @@ const JobsPage = () => {
       toast({
         title: "Delete failed",
         description: err.message || "Something went wrong",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -162,8 +176,15 @@ const JobsPage = () => {
               {/* Filters */}
               <div>
                 <Label>Location</Label>
-                <Select value={filters.location} onValueChange={(val) => setFilters({ ...filters, location: val })}>
-                  <SelectTrigger><SelectValue placeholder="All locations" /></SelectTrigger>
+                <Select
+                  value={filters.location}
+                  onValueChange={(val) =>
+                    setFilters({ ...filters, location: val })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All locations" />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All</SelectItem>
                     <SelectItem value="remote">Remote</SelectItem>
@@ -174,8 +195,15 @@ const JobsPage = () => {
               </div>
               <div>
                 <Label>Job Type</Label>
-                <Select value={filters.jobType} onValueChange={(val) => setFilters({ ...filters, jobType: val })}>
-                  <SelectTrigger><SelectValue placeholder="All types" /></SelectTrigger>
+                <Select
+                  value={filters.jobType}
+                  onValueChange={(val) =>
+                    setFilters({ ...filters, jobType: val })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All types" />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All</SelectItem>
                     <SelectItem value="remote">Remote</SelectItem>
@@ -186,8 +214,15 @@ const JobsPage = () => {
               </div>
               <div>
                 <Label>Experience</Label>
-                <Select value={filters.experience} onValueChange={(val) => setFilters({ ...filters, experience: val })}>
-                  <SelectTrigger><SelectValue placeholder="Any experience" /></SelectTrigger>
+                <Select
+                  value={filters.experience}
+                  onValueChange={(val) =>
+                    setFilters({ ...filters, experience: val })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Any experience" />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Any</SelectItem>
                     <SelectItem value="entry">Entry</SelectItem>
@@ -198,7 +233,13 @@ const JobsPage = () => {
               </div>
               <div className="flex items-end space-x-2">
                 <Button type="submit">Search</Button>
-                <Button type="button" variant="outline" onClick={handleResetFilters}>Reset</Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleResetFilters}
+                >
+                  Reset
+                </Button>
               </div>
             </div>
           </form>
@@ -208,14 +249,68 @@ const JobsPage = () => {
         {editingJobId && (
           <div className="bg-yellow-100 border border-yellow-300 p-4 rounded mb-6">
             <h3 className="text-lg font-medium mb-2">Edit Job</h3>
-            <Input placeholder="Job Title" value={editingFields.title} onChange={e => setEditingFields({ ...editingFields, title: e.target.value })} className="mb-2" />
-            <Input placeholder="Company" value={editingFields.company} onChange={e => setEditingFields({ ...editingFields, company: e.target.value })} className="mb-2" />
-            <Textarea rows={3} placeholder="Description" value={editingFields.description} onChange={e => setEditingFields({ ...editingFields, description: e.target.value })} className="mb-2" />
-            <Input placeholder="Location" value={editingFields.location} onChange={e => setEditingFields({ ...editingFields, location: e.target.value })} className="mb-2" />
-            <Input placeholder="Work Type" value={editingFields.work_type} onChange={e => setEditingFields({ ...editingFields, work_type: e.target.value })} className="mb-2" />
-            <Input placeholder="Experience Level" value={editingFields.experience_level} onChange={e => setEditingFields({ ...editingFields, experience_level: e.target.value })} className="mb-2" />
+            <Input
+              placeholder="Job Title"
+              value={editingFields.title}
+              onChange={(e) =>
+                setEditingFields({ ...editingFields, title: e.target.value })
+              }
+              className="mb-2"
+            />
+            <Input
+              placeholder="Company"
+              value={editingFields.company}
+              onChange={(e) =>
+                setEditingFields({ ...editingFields, company: e.target.value })
+              }
+              className="mb-2"
+            />
+            <Textarea
+              rows={3}
+              placeholder="Description"
+              value={editingFields.description}
+              onChange={(e) =>
+                setEditingFields({
+                  ...editingFields,
+                  description: e.target.value,
+                })
+              }
+              className="mb-2"
+            />
+            <Input
+              placeholder="Location"
+              value={editingFields.location}
+              onChange={(e) =>
+                setEditingFields({ ...editingFields, location: e.target.value })
+              }
+              className="mb-2"
+            />
+            <Input
+              placeholder="Work Type"
+              value={editingFields.work_type}
+              onChange={(e) =>
+                setEditingFields({
+                  ...editingFields,
+                  work_type: e.target.value,
+                })
+              }
+              className="mb-2"
+            />
+            <Input
+              placeholder="Experience Level"
+              value={editingFields.experience_level}
+              onChange={(e) =>
+                setEditingFields({
+                  ...editingFields,
+                  experience_level: e.target.value,
+                })
+              }
+              className="mb-2"
+            />
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setEditingJobId(null)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setEditingJobId(null)}>
+                Cancel
+              </Button>
               <Button onClick={handleSubmitEdit}>Update</Button>
             </div>
           </div>
@@ -224,8 +319,12 @@ const JobsPage = () => {
         {/* Jobs List */}
         <div>
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Jobs Matching Your Profile</h2>
-            <span className="text-gray-500">{filteredJobs.length} jobs found</span>
+            <h2 className="text-xl font-semibold">
+              Jobs Matching Your Profile
+            </h2>
+            <span className="text-gray-500">
+              {filteredJobs.length} jobs found
+            </span>
           </div>
 
           {filteredJobs.length > 0 ? (
@@ -234,22 +333,29 @@ const JobsPage = () => {
                 key={job.id}
                 id={job.id}
                 title={job.title}
-                company={`${job.company || 'Unknown Company'} (by ${job.author?.name || 'Anonymous'})`}
+                company={job.company} // 👈 just company name, no author name
                 location={job.location}
                 description={job.description}
                 matchScore={null}
                 tags={[job.experience_level, job.work_type]}
                 logoUrl=""
-                applyUrl="#"
-                isOwnPost={job.author_id === currentUserId}
+                applyUrl={`/cover-letter?title=${encodeURIComponent(
+                  job.title
+                )}&company=${encodeURIComponent(job.company)}`}
+                isOwnPost={job.author_id === user?.id}
                 onEdit={() => handleEditJob(job)}
                 onDelete={() => handleDeleteJob(job.id)}
+                // authorName={job.author?.name} // 👈 pass author name separately if needed
               />
             ))
           ) : (
             <div className="text-center py-12 bg-gray-50 rounded-lg border">
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No matching jobs found</h3>
-              <p className="text-gray-600 mb-4">Try adjusting your search criteria or filters.</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                No matching jobs found
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Try adjusting your search criteria or filters.
+              </p>
               <Button onClick={handleResetFilters}>Reset Filters</Button>
             </div>
           )}

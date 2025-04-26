@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,12 +5,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
+import axios from 'axios';
 import MainLayout from '@/components/layout/MainLayout';
+import { BASE_URL } from '../../../constants'; // Make sure you have a BASE_URL like "http://localhost:5000/api" etc.
 
 const SignupPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { login } = useAuth(); // ✅ useAuth for auto-login after signup
   const [isLoading, setIsLoading] = useState(false);
+
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -36,7 +40,7 @@ const SignupPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.agreeTerms) {
       toast({
         title: "Terms and Conditions",
@@ -45,30 +49,37 @@ const SignupPage = () => {
       });
       return;
     }
-    
+
     setIsLoading(true);
-    
+
     try {
-      // In a real app, this would call an API to create the user
-      console.log('Signup form submitted:', formData);
-      
-      // Mock successful signup
-      setTimeout(() => {
-        toast({
-          title: "Account created",
-          description: "Welcome to WorkLink AI! Your account has been created successfully."
-        });
-        navigate('/feed');
-        setIsLoading(false);
-      }, 1500);
-    } catch (error) {
+      // 1. Signup API
+      await axios.post(`${BASE_URL}/api/register`, {
+        name: formData.fullName,
+        email: formData.email,
+        password: formData.password,
+      });
+
+      // 2. Auto login after signup
+      await login(formData.email, formData.password);
+
+      toast({
+        title: "Account created successfully",
+        description: "Welcome to WorkLink AI!"
+      });
+
+      // 3. Redirect to Feed
+      navigate('/feed');
+
+    } catch (error: any) {
       console.error('Signup error:', error);
-      setIsLoading(false);
       toast({
         title: "Signup failed",
-        description: "There was an error creating your account. Please try again.",
+        description: error?.response?.data?.message || error.message || "Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -80,12 +91,12 @@ const SignupPage = () => {
             <h1 className="text-3xl font-bold">Create your account</h1>
             <p className="text-gray-600 mt-2">Start your journey with WorkLink AI</p>
           </div>
-          
+
           <div className="bg-white p-8 rounded-lg shadow-sm border">
             <form onSubmit={handleSubmit}>
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="fullName">Full name</Label>
+                  <Label htmlFor="fullName">Full Name</Label>
                   <Input 
                     id="fullName"
                     name="fullName"
@@ -95,7 +106,7 @@ const SignupPage = () => {
                     required
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="email">Email address</Label>
                   <Input 
@@ -108,7 +119,7 @@ const SignupPage = () => {
                     required
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
                   <Input 
@@ -125,7 +136,7 @@ const SignupPage = () => {
                     Must be at least 8 characters long
                   </p>
                 </div>
-                
+
                 <div className="flex items-start space-x-2">
                   <Checkbox 
                     id="agreeTerms" 
@@ -144,13 +155,13 @@ const SignupPage = () => {
                     </Link>
                   </Label>
                 </div>
-                
+
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? "Creating account..." : "Create account"}
                 </Button>
               </div>
             </form>
-            
+
             <div className="mt-6">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
@@ -160,7 +171,7 @@ const SignupPage = () => {
                   <span className="px-2 bg-white text-gray-500">Or continue with</span>
                 </div>
               </div>
-              
+
               <div className="mt-6 grid grid-cols-2 gap-3">
                 <Button variant="outline" className="w-full" type="button">
                   Google
@@ -171,7 +182,7 @@ const SignupPage = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="text-center mt-6">
             <p className="text-gray-600">
               Already have an account?{' '}

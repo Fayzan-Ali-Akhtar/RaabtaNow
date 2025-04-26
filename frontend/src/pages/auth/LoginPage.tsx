@@ -39,12 +39,14 @@ const LoginPage = () => {
     try {
       await login(formData.email, formData.password);
       
-      console.log('User logged in:', user); // user object, check if login was successful
+      // console.log('User logged in:', user); // user object, check if login was successful
 
       toast({
         title: "Logged in successfully",
         description: "Welcome back to WorkLink AI!"
       });
+      
+      navigate('/feed');
       
       if (formData.rememberMe) {
         localStorage.setItem('rememberMe', 'true');
@@ -52,7 +54,6 @@ const LoginPage = () => {
         localStorage.removeItem('rememberMe');
       }
       
-      navigate('/feed');
     } catch (error) {
       console.error('Login error:', error);
       toast({

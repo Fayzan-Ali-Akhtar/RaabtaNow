@@ -5,9 +5,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { PostCard } from "@/components/ui/post-card";
 import MainLayout from "@/components/layout/MainLayout";
+import { useAuth } from "@/context/AuthContext"; // 👈 Import useAuth
 
 const FeedPage = () => {
   const { toast } = useToast();
+  const { user } = useAuth(); // 👈 Get logged in user
 
   const [newPostContent, setNewPostContent] = useState("");
   const [posts, setPosts] = useState([]);
@@ -24,18 +26,35 @@ const FeedPage = () => {
   const [jobType, setJobType] = useState("");
   const [experienceLevel, setExperienceLevel] = useState("");
   const [companyName, setCompanyName] = useState("");
+  // const [likesCount, setLikesCount] = useState(likes || 0);
+  const [postIsLikedByUser, setPostIsLikedByUser] = useState(false); // assume not liked initially
+
+  const { getAuthToken } = useAuth();
+
+  // 🛑 Add loading screen if user not loaded yet
+  if (!user) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const res = await axios.get("/api/getposts");
+        const res = await axios.get("/api/getposts", {
+          headers: {
+            Authorization: `Bearer ${getAuthToken()}`,
+          },
+        });
         setPosts(
           [...res.data.jobs].sort(
             (a, b) =>
               new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           )
         );
-      } catch (err) {
+      } catch (err: any) {
         toast({
           title: "Error loading posts",
           description: err.message || "Something went wrong",
@@ -64,15 +83,23 @@ const FeedPage = () => {
     setIsSubmitting(true);
 
     try {
-      const res = await axios.post("/api/createpost", {
-        content: newPostContent,
-        author_id: 1,
-      });
+      const res = await axios.post(
+        "/api/createpost",
+        {
+          content: newPostContent,
+          author_id: user?.id,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${getAuthToken()}`,
+          },
+        }
+      );
 
       setPosts([res.data.job, ...posts]);
       setNewPostContent("");
       toast({ title: "Post created" });
-    } catch (err) {
+    } catch (err: any) {
       toast({
         title: "Post failed",
         description: err.message || "Something went wrong",
@@ -84,28 +111,41 @@ const FeedPage = () => {
   };
 
   const handleJobPostSubmit = async () => {
-    if (!jobTitle || !jobDescription || !jobType || !experienceLevel || !companyName) {
+    if (
+      !jobTitle ||
+      !jobDescription ||
+      !jobType ||
+      !experienceLevel ||
+      !companyName
+    ) {
       return toast({
         title: "Missing fields",
         description: "Fill out all job fields before posting.",
         variant: "destructive",
       });
     }
-  
+
     try {
-      const res = await axios.post("/api/createjobpost", {
-        title: jobTitle,
-        description: jobDescription,
-        company: companyName, // 👈 include company name
-        location: jobLocation,
-        work_type: jobType,
-        experience_level: experienceLevel,
-        author_id: 1,
-      });
-  
+      const res = await axios.post(
+        "/api/createjobpost",
+        {
+          title: jobTitle,
+          description: jobDescription,
+          company: companyName,
+          location: jobLocation,
+          work_type: jobType,
+          experience_level: experienceLevel,
+          author_id: user?.id, // ✅ use logged-in user's id
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${getAuthToken()}`,
+          },
+        }
+      );
+
       toast({ title: "Job posted successfully" });
-  
-      // Reset
+
       setJobTitle("");
       setCompanyName("");
       setJobDescription("");
@@ -113,7 +153,7 @@ const FeedPage = () => {
       setJobType("");
       setExperienceLevel("");
       setShowJobForm(false);
-    } catch (err) {
+    } catch (err: any) {
       toast({
         title: "Job post failed",
         description: err.message || "Something went wrong",
@@ -121,13 +161,17 @@ const FeedPage = () => {
       });
     }
   };
-  
+
   const handleDeletePost = async (postId: string) => {
     try {
-      await axios.delete(`/api/delete/${postId}`);
+      await axios.delete(`/api/delete/${postId}`, {
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+      });
       setPosts(posts.filter((post) => post.id !== postId));
       toast({ title: "Post deleted" });
-    } catch (err) {
+    } catch (err: any) {
       toast({
         title: "Delete failed",
         description: err.message || "Something went wrong",
@@ -146,10 +190,18 @@ const FeedPage = () => {
 
   const submitEditPost = async () => {
     try {
-      const res = await axios.patch("/api/update", {
-        id: editingPostId,
-        content: editingContent,
-      });
+      const res = await axios.patch(
+        "/api/update",
+        {
+          id: editingPostId,
+          content: editingContent,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${getAuthToken()}`,
+          },
+        }
+      );
 
       setPosts(
         posts.map((post) => (post.id === editingPostId ? res.data.job : post))
@@ -158,7 +210,7 @@ const FeedPage = () => {
       setEditingPostId(null);
       setEditingContent("");
       toast({ title: "Post updated" });
-    } catch (err) {
+    } catch (err: any) {
       toast({
         title: "Update failed",
         description: err.message || "Something went wrong",
@@ -189,7 +241,6 @@ const FeedPage = () => {
             </div>
           </form>
 
-          {/* 🔥 Move this outside the form */}
           <div className="mt-3 text-right">
             <Button
               type="button"
@@ -211,12 +262,28 @@ const FeedPage = () => {
               value={jobTitle}
               onChange={(e) => setJobTitle(e.target.value)}
             />
-            <input
+            <select
               className="w-full p-2 mb-2 border rounded"
-              placeholder="Company Name"
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
-            />
+            >
+              <option value="">Select Company</option>
+              <option value="Google (Alphabet Inc.)">
+                Google (Alphabet Inc.)
+              </option>
+              <option value="Microsoft">Microsoft</option>
+              <option value="Amazon">Amazon</option>
+              <option value="Apple">Apple</option>
+              <option value="Meta (formerly Facebook)">
+                Meta (formerly Facebook)
+              </option>
+              <option value="Netflix">Netflix</option>
+              <option value="NVIDIA">NVIDIA</option>
+              <option value="Tesla">Tesla</option>
+              <option value="Adobe">Adobe</option>
+              <option value="Salesforce">Salesforce</option>
+            </select>
+
             <Textarea
               rows={4}
               className="w-full resize-none mb-2"
@@ -224,7 +291,6 @@ const FeedPage = () => {
               value={jobDescription}
               onChange={(e) => setJobDescription(e.target.value)}
             />
-            
             <input
               className="w-full p-2 mb-2 border rounded"
               placeholder="Location"
@@ -294,14 +360,16 @@ const FeedPage = () => {
                 key={post.id}
                 id={post.id}
                 author={
-                  post.author || { id: post.author_id, name: "Anonymous" }
+                  post.author
+                    ? { id: post.author.id, name: post.author.name }
+                    : { id: post.author_id, name: "Anonymous" }
                 }
                 content={post.content}
                 imageUrl={post.media_url}
                 likes={post.likes}
                 comments={post.comments_count}
                 timestamp={post.createdAt}
-                isOwnPost={post.author_id === 1}
+                isOwnPost={post.author_id === user?.id}
                 onEdit={handleEditPost}
                 onDelete={handleDeletePost}
               />

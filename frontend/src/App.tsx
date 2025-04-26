@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,32 +15,77 @@ import CoverLetterPage from "./pages/CoverLetterPage";
 import SettingsPage from "./pages/SettingsPage";
 import FeaturesPage from "./pages/FeaturesPage";
 import NotFound from "./pages/NotFound";
+
+// Context
 import { AuthProvider } from "./context/AuthContext";
+
+// Private Route
+import PrivateRoute from "./pages/auth/PrivateRoute"; // 👈 (Adjust import path if needed)
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <AuthProvider>
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
-          <Route path="/feed" element={<FeedPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/jobs" element={<JobsPage />} />
-          <Route path="/cover-letter" element={<CoverLetterPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/features" element={<FeaturesPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<HomePage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/features" element={<FeaturesPage />} />
+            
+            {/* Private Routes */}
+            <Route
+              path="/feed"
+              element={
+                <PrivateRoute>
+                  <FeedPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <PrivateRoute>
+                  <ProfilePage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/jobs"
+              element={
+                <PrivateRoute>
+                  <JobsPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/cover-letter"
+              element={
+                <PrivateRoute>
+                  <CoverLetterPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <PrivateRoute>
+                  <SettingsPage />
+                </PrivateRoute>
+              }
+            />
+            
+            {/* 404 Not Found */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
   </AuthProvider>
 );
 
