@@ -25,6 +25,12 @@ resource "aws_iam_role_policy_attachment" "ssm_core" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
+// grant Cognito-IDP power-user abilities to the EC2 role
+resource "aws_iam_role_policy_attachment" "ssm_cognito_power_user" {
+  role       = aws_iam_role.ssm_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonCognitoPowerUser"
+}
+
 resource "aws_iam_instance_profile" "ssm_profile" {
   name = "${var.project_name}-ec2-ssm-profile"
   role = aws_iam_role.ssm_role.name

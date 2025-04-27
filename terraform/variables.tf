@@ -26,7 +26,7 @@ variable "github_repo_url" {
 variable "github_backend_path" {
   description = "Path inside the cloned repo to the backend folder"
   type        = string
-  default     = "RaabtaNow/backend"
+  default     = "backend"
 }
 
 variable "db_name" {
