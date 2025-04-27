@@ -9,18 +9,12 @@ locals {
   unique_project_name = "${var.project_name}-${random_id.suffix.hex}"
 }
 
-# 1. Discover Default VPC
-data "aws_vpc" "default" {
-  default = true
+module "vpc" {
+  source       = "./modules/vpc"
+  project_name = local.unique_project_name
+  aws_region   = var.aws_region
 }
 
-# 1a. Fetch all subnet IDs in that VPC
-data "aws_subnets" "default" {
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.default.id]
-  }
-}
 
 # ———————————————————————————————————————————————————————————————
 # 0️⃣ Self-Signed Certificate (pre-generated .crt/.key in repo)
@@ -52,6 +46,8 @@ module "cognito" {
 module "rds" {
   source       = "./modules/rds"
   project_name = local.unique_project_name
+  subnet_ids   = module.vpc.data_subnet_ids                   
+  vpc_id       = module.vpc.vpc_id 
   db_name     = var.db_name
   db_username = var.db_username
   # you may override db_name/db_username/etc here if you like
@@ -61,10 +57,9 @@ module "rds" {
 module "alb" {
   source       = "./modules/alb"
   project_name = local.unique_project_name
-  vpc_id       = data.aws_vpc.default.id
-  subnet_ids   = data.aws_subnets.default.ids
-
-   aws_acm_certificate_arn  = aws_acm_certificate.self_signed.arn
+  vpc_id                    = module.vpc.vpc_id
+  subnet_ids                = module.vpc.public_subnet_ids # ALB lives in public tier
+  aws_acm_certificate_arn  = aws_acm_certificate.self_signed.arn
 }
 
 # 2️⃣ ASG Module (behind the ALB’s Target Group)
@@ -74,8 +69,8 @@ module "asg" {
   aws_region           = var.aws_region
   ami_id               = data.aws_ssm_parameter.al2023_ami.value
   instance_type        = var.instance_type
-  subnet_ids           = data.aws_subnets.default.ids
-  vpc_id              = data.aws_vpc.default.id
+  subnet_ids = module.vpc.app_subnet_ids                       # backend EC2 in private tier
+  vpc_id     = module.vpc.vpc_id
 
   github_repo_url      = var.github_repo_url
   github_backend_path  = var.github_backend_path

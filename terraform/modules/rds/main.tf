@@ -1,18 +1,9 @@
 # modules/rds/main.tf
 
-data "aws_vpc" "default" {}
-
-data "aws_subnets" "default" {
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.default.id]
-  }
-}
-
 resource "aws_db_subnet_group" "this" {
   # lowercase the project name
   name       = "${lower(var.project_name)}-db-subnet-group"
-  subnet_ids = data.aws_subnets.default.ids
+  subnet_ids = var.subnet_ids
 
   tags = {
     Name    = "${lower(var.project_name)}-db-subnet-group"
@@ -23,7 +14,7 @@ resource "aws_db_subnet_group" "this" {
 resource "aws_security_group" "rds" {
   name        = "${lower(var.project_name)}-rds-sg"
   description = "Allow PostgreSQL inbound"
-  vpc_id      = data.aws_vpc.default.id
+  vpc_id = var.vpc_id
 
   ingress {
     from_port   = 5432
