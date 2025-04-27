@@ -1,0 +1,8 @@
+NVIDIA seeks "to solve the world’s most challenging computational problems" through innovation and 
+excellence. Its values include deep intellectual honesty, team collaboration, and pushing the 
+boundaries of what’s possible. NVIDIA's work culture is built for people passionate about solving 
+difficult problems and working on cutting-edge technology, especially in AI, graphics, and 
+high-performance computing. Operating within the semiconductor and AI industry, NVIDIA’s major 
+achievements include inventing the GPU, dominating AI hardware markets with products like the A100 
+and H100 chips, and leading efforts in areas like autonomous driving and Omniverse virtual 
+environments.

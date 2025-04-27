@@ -1,4 +1,4 @@
-# root/outputs.tf
+# # root/outputs.tf
 # output "backend_public_dns" {
 #   description = "Public DNS of the EC2 instance"
 #   value       = module.ec2_backend.backend_public_dns
@@ -23,3 +23,8 @@
 #   description = "ID of the Cognito User Pool Client"
 #   value       = module.cognito.user_pool_client_id
 # }
+
+
+output "api_endpoint" {
+  value = module.api_gateway.api_url
+}
