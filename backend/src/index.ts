@@ -1,7 +1,7 @@
 import express from 'express';
 import 'dotenv/config';
 import cors from 'cors';
-import pool from './DB/connect'
+import pool from './db/connect'
 
 // Importing Routes
 import userRouter from './routes/userRoute';
