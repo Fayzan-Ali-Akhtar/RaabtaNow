@@ -40,3 +40,10 @@ variable "db_username" {
   type        = string
   default     = "postgres"
 }
+
+#  variable for the branch name
+variable "github_repo_branch" {
+  description = "Which branch of the GitHub repo to clone"
+  type        = string
+  default     = "fixing-frontend-and-backend"
+}

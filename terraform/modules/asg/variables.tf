@@ -20,3 +20,5 @@ variable "db_password"          { type = string }
 
 variable "alb_sg_id"            { type = string }
 variable "target_group_arn"     { type = string }
+
+variable "github_repo_branch"   { type = string }

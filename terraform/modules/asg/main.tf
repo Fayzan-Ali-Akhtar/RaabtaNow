@@ -94,10 +94,13 @@ resource "aws_launch_template" "this" {
     dnf update -y
     dnf install -y git nodejs20
 
-    # 3) Clone your repo
+    # 3) Clone your repo (only the specified branch)
     cd /home/ec2-user
-    git clone ${var.github_repo_url}
-    cd ${var.github_backend_path}
+    git clone \
+      --branch ${var.github_repo_branch} \
+      --single-branch \
+      ${var.github_repo_url} repo
+    cd repo/${var.github_backend_path}
 
     # 4) Write .env in the backend folder
     cat > .env <<EOL
