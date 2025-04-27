@@ -6,6 +6,11 @@ import {
   ConfirmSignUpCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
 
+import { Request, Response } from "express";
+import User from "../models/userModel";        // import your Sequelize User model
+import { Profile } from "../models/profileModel"; // import your Profile model
+
+
 // Initialize the Cognito client
 const cognito = new CognitoIdentityProviderClient({
   region: process.env.AWS_REGION,
@@ -13,15 +18,17 @@ const cognito = new CognitoIdentityProviderClient({
 
 export const signup = async (req: any, res: any) => {
   console.log("Sign up request", req.body);
-  const { email, password, group } = req.body;
-  if (!email || !password || !group) {
-    return res
-      .status(400)
-      .json({ error: "email, password and group are required" });
+  const { name, email, password, group } = req.body;
+
+  if (!email || !password || !group || !name) {
+    return res.status(400).json({
+      success: false,
+      message: "name, email, password and group are required"
+    });
   }
 
   try {
-    // 1a. Create the user
+    // 1a. Sign up user in Cognito
     const signUpCmd = new SignUpCommand({
       ClientId: process.env.COGNITO_CLIENT_ID!,
       Username: email,
@@ -30,7 +37,7 @@ export const signup = async (req: any, res: any) => {
     });
     const signUpResp = await cognito.send(signUpCmd);
 
-    // 1b. Add them to the requested group
+    // 1b. Add user to group
     const addGroupCmd = new AdminAddUserToGroupCommand({
       UserPoolId: process.env.COGNITO_USER_POOL_ID!,
       Username: email,
@@ -38,17 +45,51 @@ export const signup = async (req: any, res: any) => {
     });
     await cognito.send(addGroupCmd);
 
-    res.json({
-      message: "Sign‑up successful; check your email to confirm.",
-      userSub: signUpResp.UserSub,
-      codeDeliveryDetails: signUpResp.CodeDeliveryDetails,
-      addedToGroup: group,
+    // 2. Create user in your DB
+    let newUser = await User.findOne({ where: { email } });
+    if (!newUser) {
+      const placeholderPassword = "**********";
+
+      newUser = await User.create({
+        name,
+        email,
+        password: placeholderPassword,
+      });
+
+      await Profile.create({
+        user_id: newUser.id,
+        full_name: name,
+        contact_email: email,
+        location: "",
+        company: "",
+        professional_headline: "",
+        skills: [],
+        working_experience: 0,
+        bio: "",
+        age: 0,
+      });
+
+      console.log("✅ User and Profile created successfully in DB");
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: "User registered successfully. Please confirm your email.",
+      user: {
+        id: newUser!.id,
+        name: newUser!.name,
+        email: newUser!.email
+      }
+      // No token returned at signup stage
     });
+
   } catch (err: any) {
     console.error("Signup/group error", err);
-    // return the error code and message
     const status = err.$metadata?.httpStatusCode || 500;
-    return res.status(status).json({ error: err.message || "Signup failed" });
+    return res.status(status).json({
+      success: false,
+      message: err.message || "Signup failed"
+    });
   }
 };
 
@@ -84,8 +125,9 @@ export const confirmEmail = async (req: any, res: any) => {
 export const login = async (req: any, res: any) => {
   console.log("Login request", req.body);
   const { email, password } = req.body;
+
   if (!email || !password) {
-    return res.status(400).json({ error: "email and password are required" });
+    return res.status(400).json({ success: false, message: "email and password are required" });
   }
 
   try {
@@ -93,23 +135,73 @@ export const login = async (req: any, res: any) => {
       AuthFlow: "USER_PASSWORD_AUTH",
       ClientId: process.env.COGNITO_CLIENT_ID!,
       AuthParameters: {
-        USERNAME: email, // logging in with email
+        USERNAME: email,
         PASSWORD: password,
       },
     });
     const response = await cognito.send(cmd);
-    const { AccessToken, IdToken, RefreshToken, ExpiresIn } =
-      response.AuthenticationResult!;
-    res.json({ AccessToken, IdToken, RefreshToken, ExpiresIn });
+
+    const { AccessToken, IdToken, RefreshToken, ExpiresIn } = response.AuthenticationResult!;
+
+    // Fetch user profile from your DB (optional but nicer)
+    const user = await User.findOne({ where: { email } });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "No user found in database" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Login successful",
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email
+      },
+      tokens: {
+        accessToken: AccessToken,
+        idToken: IdToken,
+        refreshToken: RefreshToken,
+        expiresIn: ExpiresIn,
+      }
+    });
+
   } catch (err: any) {
     console.error("Login error", err);
     const status = err.$metadata?.httpStatusCode === 400 ? 401 : 500;
-    return res
-      .status(status)
-      .json({ error: err.message || "Authentication failed" });
+    return res.status(status).json({
+      success: false,
+      message: err.message || "Authentication failed"
+    });
   }
 };
 
 export const testUserAPI = async (_req: any, res: any) => {
   res.json({ message: "✅ Test User API is working!" });
+};
+
+export const getUsers = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const users = await User.findAll();
+
+    if (!users || users.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No users found"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Users retrieved successfully",
+      users
+    });
+    
+  } catch (error) {
+    console.error("Error in getUsers:", error);
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching users"
+    });
+  }
 };
