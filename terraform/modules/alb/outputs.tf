@@ -1,3 +1,4 @@
+# root/module/alb/outputs.tf
 output "alb_security_group_id" {
   value       = aws_security_group.alb.id
   description = "ID of the ALB SG"
@@ -24,4 +25,9 @@ output "certificate_arn" {
 
   # OR, if you renamed the input variable to "certificate_arn":
   # value = var.certificate_arn
+}
+
+output "alb_arn" {
+  description = "Full ARN of the ALB"
+  value       = aws_lb.this.arn
 }

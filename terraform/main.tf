@@ -36,58 +36,58 @@ data "aws_ssm_parameter" "al2023_ami" {
 
 # 3. Create Cognito first
 module "cognito" {
-  source           = "./modules/cognito"
-  project_name     = local.unique_project_name
-  user_pool_name   = "${local.unique_project_name}-pool"
-  user_groups      = ["recruiter", "candidate"]
+  source         = "./modules/cognito"
+  project_name   = local.unique_project_name
+  user_pool_name = "${local.unique_project_name}-pool"
+  user_groups    = ["recruiter", "candidate"]
   # …any other cognito inputs…
 }
 
 module "rds" {
   source       = "./modules/rds"
   project_name = local.unique_project_name
-  subnet_ids   = module.vpc.data_subnet_ids                   
-  vpc_id       = module.vpc.vpc_id 
-  db_name     = var.db_name
-  db_username = var.db_username
+  subnet_ids   = module.vpc.data_subnet_ids
+  vpc_id       = module.vpc.vpc_id
+  db_name      = var.db_name
+  db_username  = var.db_username
   # you may override db_name/db_username/etc here if you like
 }
 
 # 1️⃣ ALB Module (incl. self-signed TLS ACM import)
 module "alb" {
-  source       = "./modules/alb"
-  project_name = local.unique_project_name
-  vpc_id                    = module.vpc.vpc_id
-  subnet_ids                = module.vpc.public_subnet_ids # ALB lives in public tier
-  aws_acm_certificate_arn  = aws_acm_certificate.self_signed.arn
+  source                  = "./modules/alb"
+  project_name            = local.unique_project_name
+  vpc_id                  = module.vpc.vpc_id
+  subnet_ids              = module.vpc.public_subnet_ids # ALB lives in public tier
+  aws_acm_certificate_arn = aws_acm_certificate.self_signed.arn
 }
 
 # 2️⃣ ASG Module (behind the ALB’s Target Group)
 module "asg" {
-  source               = "./modules/asg"
-  project_name         = local.unique_project_name
-  aws_region           = var.aws_region
-  ami_id               = data.aws_ssm_parameter.al2023_ami.value
-  instance_type        = var.instance_type
-  subnet_ids = module.vpc.app_subnet_ids                       # backend EC2 in private tier
-  vpc_id     = module.vpc.vpc_id
+  source        = "./modules/asg"
+  project_name  = local.unique_project_name
+  aws_region    = var.aws_region
+  ami_id        = data.aws_ssm_parameter.al2023_ami.value
+  instance_type = var.instance_type
+  subnet_ids    = module.vpc.app_subnet_ids # backend EC2 in private tier
+  vpc_id        = module.vpc.vpc_id
 
-  github_repo_url      = var.github_repo_url
-  github_backend_path  = var.github_backend_path
+  github_repo_url     = var.github_repo_url
+  github_backend_path = var.github_backend_path
 
   cognito_user_pool_id = module.cognito.user_pool_id
   cognito_client_id    = module.cognito.user_pool_client_id
 
-  db_endpoint          = module.rds.endpoint
-  db_port              = module.rds.port
-  db_name              = module.rds.db_name
-  db_username          = module.rds.username
-  db_password          = module.rds.password
+  db_endpoint = module.rds.endpoint
+  db_port     = module.rds.port
+  db_name     = module.rds.db_name
+  db_username = module.rds.username
+  db_password = module.rds.password
 
-  alb_sg_id            = module.alb.alb_security_group_id
-  target_group_arn     = module.alb.target_group_arn
+  alb_sg_id        = module.alb.alb_security_group_id
+  target_group_arn = module.alb.target_group_arn
 
-  github_repo_branch   = var.github_repo_branch
+  github_repo_branch = var.github_repo_branch
 }
 
 # Write backend/.env
@@ -111,6 +111,18 @@ module "frontend" {
   project_name = local.unique_project_name
   aws_region   = var.aws_region
   frontend_dir = "${path.root}/../frontend"
-  backend_url = "https://${module.alb.alb_dns_name}"
+  backend_url  = "https://${module.alb.alb_dns_name}"
   depends_on   = [module.asg]
+}
+
+module "monitoring" {
+  source       = "./modules/monitoring"
+  project_name = local.unique_project_name
+
+  alb_arn         = module.alb.alb_arn
+  asg_name        = module.asg.asg_name
+  rds_instance_id = module.rds.db_instance_id
+
+  alarm_email          = var.alarm_email
+  vpc_id               = module.vpc.vpc_id
 }
