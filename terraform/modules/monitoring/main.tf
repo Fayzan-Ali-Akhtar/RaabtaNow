@@ -17,7 +17,7 @@ resource "aws_sns_topic_subscription" "email" {
 resource "aws_cloudwatch_metric_alarm" "alb_5xx" {
   alarm_name          = "${var.project_name}-alb-5xx"
   comparison_operator = "GreaterThanThreshold"
-  threshold           = 10
+  threshold           = 1
   evaluation_periods  = 1
   period              = 60
   statistic           = "Sum"

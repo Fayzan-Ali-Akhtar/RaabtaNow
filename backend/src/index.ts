@@ -36,6 +36,11 @@ app.get('/api/test', (req:any, res:any) => res.send('✅ Backend test is working
 // API routes
 app.use('/api/user', userRouter)
 
+// Test route that always returns 500
+app.get('/api/error', (_req, res) => {
+  res.status(500).send('❌ Intentional server error');
+});
+
 // Before starting, verify we can actually talk to the DB
 const start = async () => {
   try {
