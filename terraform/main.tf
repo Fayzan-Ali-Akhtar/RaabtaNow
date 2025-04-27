@@ -1,5 +1,14 @@
 # terraform/main.tf
 
+resource "random_id" "suffix" {
+  byte_length = 4
+}
+
+# 2) Build a new, unique project name
+locals {
+  unique_project_name = "${var.project_name}-${random_id.suffix.hex}"
+}
+
 # 1. Discover Default VPC
 data "aws_vpc" "default" {
   default = true
@@ -21,8 +30,8 @@ resource "aws_acm_certificate" "self_signed" {
   certificate_body = file("${path.root}/self_signed.crt")
 
   tags = {
-    Name    = "${var.project_name}-selfsigned-cert"
-    Project = var.project_name
+    Name    = "${local.unique_project_name}-selfsigned-cert"
+    Project = local.unique_project_name
   }
 }
 
@@ -34,15 +43,15 @@ data "aws_ssm_parameter" "al2023_ami" {
 # 3. Create Cognito first
 module "cognito" {
   source           = "./modules/cognito"
-  project_name     = var.project_name
-  user_pool_name   = "${var.project_name}-pool"
+  project_name     = local.unique_project_name
+  user_pool_name   = "${local.unique_project_name}-pool"
   user_groups      = ["recruiter", "candidate"]
   # …any other cognito inputs…
 }
 
 module "rds" {
   source       = "./modules/rds"
-  project_name = var.project_name
+  project_name = local.unique_project_name
   db_name     = var.db_name
   db_username = var.db_username
   # you may override db_name/db_username/etc here if you like
@@ -51,7 +60,7 @@ module "rds" {
 # 1️⃣ ALB Module (incl. self-signed TLS ACM import)
 module "alb" {
   source       = "./modules/alb"
-  project_name = var.project_name
+  project_name = local.unique_project_name
   vpc_id       = data.aws_vpc.default.id
   subnet_ids   = data.aws_subnets.default.ids
 
@@ -61,7 +70,7 @@ module "alb" {
 # 2️⃣ ASG Module (behind the ALB’s Target Group)
 module "asg" {
   source               = "./modules/asg"
-  project_name         = var.project_name
+  project_name         = local.unique_project_name
   aws_region           = var.aws_region
   ami_id               = data.aws_ssm_parameter.al2023_ami.value
   instance_type        = var.instance_type
@@ -104,7 +113,7 @@ resource "local_file" "backend_env" {
 
 module "frontend" {
   source       = "./modules/frontend"
-  project_name = var.project_name
+  project_name = local.unique_project_name
   aws_region   = var.aws_region
   frontend_dir = "${path.root}/../frontend"
   backend_url = "https://${module.alb.alb_dns_name}"
