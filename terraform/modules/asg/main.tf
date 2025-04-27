@@ -74,6 +74,16 @@ resource "aws_security_group" "instance" {
   }
 }
 
+resource "aws_iam_role_policy_attachment" "ssm_cloudwatch_logs" {
+  role       = aws_iam_role.ssm_role.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+}
+
+resource "aws_cloudwatch_log_group" "backend" {
+  name              = "/${var.project_name}/backend"
+  retention_in_days = 7
+}
+
 # 2) Launch Template with inline user_data
 resource "aws_launch_template" "this" {
   name_prefix   = "${var.project_name}-lt-"
