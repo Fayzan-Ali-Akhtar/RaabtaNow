@@ -82,6 +82,8 @@ module "asg" {
 
   alb_sg_id            = module.alb.alb_security_group_id
   target_group_arn     = module.alb.target_group_arn
+
+  github_repo_branch   = var.github_repo_branch
 }
 
 # Write backend/.env

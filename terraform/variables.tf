@@ -26,7 +26,7 @@ variable "github_repo_url" {
 variable "github_backend_path" {
   description = "Path inside the cloned repo to the backend folder"
   type        = string
-  default     = "RaabtaNow/backend"
+  default     = "backend"
 }
 
 variable "db_name" {
@@ -39,4 +39,11 @@ variable "db_username" {
   description = "RDS master username (must be lowercase)"
   type        = string
   default     = "postgres"
+}
+
+#  variable for the branch name
+variable "github_repo_branch" {
+  description = "Which branch of the GitHub repo to clone"
+  type        = string
+  default     = "fixing-frontend-and-backend"
 }

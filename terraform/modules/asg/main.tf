@@ -25,6 +25,12 @@ resource "aws_iam_role_policy_attachment" "ssm_core" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
+// grant Cognito-IDP power-user abilities to the EC2 role
+resource "aws_iam_role_policy_attachment" "ssm_cognito_power_user" {
+  role       = aws_iam_role.ssm_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonCognitoPowerUser"
+}
+
 resource "aws_iam_instance_profile" "ssm_profile" {
   name = "${var.project_name}-ec2-ssm-profile"
   role = aws_iam_role.ssm_role.name
@@ -94,10 +100,13 @@ resource "aws_launch_template" "this" {
     dnf update -y
     dnf install -y git nodejs20
 
-    # 3) Clone your repo
+    # 3) Clone your repo (only the specified branch)
     cd /home/ec2-user
-    git clone ${var.github_repo_url}
-    cd ${var.github_backend_path}
+    git clone \
+      --branch ${var.github_repo_branch} \
+      --single-branch \
+      ${var.github_repo_url} repo
+    cd repo/${var.github_backend_path}
 
     # 4) Write .env in the backend folder
     cat > .env <<EOL
