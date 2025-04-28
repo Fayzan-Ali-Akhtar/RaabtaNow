@@ -120,6 +120,5 @@ module "monitoring" {
   asg_name        = module.asg.asg_name
   rds_instance_id = module.rds.db_instance_id
 
-  alarm_phone_number          = var.alarm_phone_number
   vpc_id               = module.vpc.vpc_id
 }
