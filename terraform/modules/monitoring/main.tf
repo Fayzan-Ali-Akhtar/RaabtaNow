@@ -5,10 +5,18 @@ resource "aws_sns_topic" "alarm_topic" {
   name = "${var.project_name}-alarms"
 }
 
-resource "aws_sns_topic_subscription" "email" {
+resource "aws_sns_topic_subscription" "sms" {
   topic_arn = aws_sns_topic.alarm_topic.arn
-  protocol  = "email"
-  endpoint  = var.alarm_email
+  protocol  = "sms"
+  endpoint  = var.alarm_phone_number       
+}
+
+locals {
+  lb_resource_name = join(
+                       "/",
+                       slice(split("/", var.alb_arn), 1, 4)
+                       #  result → app/RaabtaNow-Fayzan-alb/3c39c1fb3b804791
+                     )
 }
 
 ###########################
@@ -17,21 +25,22 @@ resource "aws_sns_topic_subscription" "email" {
 resource "aws_cloudwatch_metric_alarm" "alb_5xx" {
   alarm_name          = "${var.project_name}-alb-5xx"
   comparison_operator = "GreaterThanThreshold"
-  threshold           = 10
+  threshold           = 1
   evaluation_periods  = 1
   period              = 60
   statistic           = "Sum"
   namespace           = "AWS/ApplicationELB"
-  metric_name         = "HTTPCode_Target_5XX_Count"
-
+  metric_name         = "HTTPCode_Target_5XX_Count"  
   dimensions = {
-    LoadBalancer = replace(var.alb_arn, "arn:aws:elasticloadbalancing:", "")   # CW wants the short name
+    LoadBalancer = local.lb_resource_name
   }
 
   alarm_description   = "More than 10 target-side 5xx errors in 1 min"
   treat_missing_data  = "notBreaching"
   actions_enabled     = true
   alarm_actions       = [aws_sns_topic.alarm_topic.arn]
+
+  depends_on = [aws_sns_topic_subscription.sms]
 }
 
 resource "aws_cloudwatch_metric_alarm" "alb_latency" {
@@ -51,6 +60,8 @@ resource "aws_cloudwatch_metric_alarm" "alb_latency" {
   alarm_description  = "ALB p90 latency > 500 ms for 2 minutes"
   treat_missing_data = "notBreaching"
   alarm_actions      = [aws_sns_topic.alarm_topic.arn]
+
+  depends_on = [aws_sns_topic_subscription.sms]
 }
 
 ###########################
@@ -73,6 +84,8 @@ resource "aws_cloudwatch_metric_alarm" "ec2_cpu_high" {
   alarm_description  = "Average CPU >80 % for 2 min in ASG"
   alarm_actions      = [aws_sns_topic.alarm_topic.arn]
   ok_actions         = [aws_sns_topic.alarm_topic.arn]
+
+  depends_on = [aws_sns_topic_subscription.sms]
 }
 
 ###########################
@@ -94,6 +107,8 @@ resource "aws_cloudwatch_metric_alarm" "rds_cpu_high" {
 
   alarm_description  = "RDS CPU >80 % for 10 min"
   alarm_actions      = [aws_sns_topic.alarm_topic.arn]
+
+  depends_on = [aws_sns_topic_subscription.sms]
 }
 
 resource "aws_cloudwatch_metric_alarm" "rds_free_storage_low" {
@@ -112,23 +127,24 @@ resource "aws_cloudwatch_metric_alarm" "rds_free_storage_low" {
 
   alarm_description  = "RDS free storage <1 GiB"
   alarm_actions      = [aws_sns_topic.alarm_topic.arn]
+
+  depends_on    = [aws_sns_topic_subscription.sms]
 }
 
 ###########################
 # 4) Optional: VPC Flow Logs → CW
 ###########################
-resource "aws_cloudwatch_log_group" "vpc_flow" {
-  name              = "/${var.project_name}/vpc-flow-logs"
-  retention_in_days = 7                  # tweak as needed
+locals {
+  # grab "2025-04-28T15:34:00Z" then reformat into "20250428-153400"
+  current_time_and_date = formatdate("YYYYMMDD-hhmmss", timestamp())
 }
 
-resource "aws_flow_log" "all" {
-  log_destination      = aws_cloudwatch_log_group.vpc_flow.arn
-  log_destination_type = "cloud-watch-logs"
-  traffic_type         = "ALL"
-  vpc_id               = var.vpc_id                       # add var if you want this
-  iam_role_arn         = aws_iam_role.flow.arn
+resource "aws_cloudwatch_log_group" "vpc_flow" {
+  name              = "/${var.project_name}/vpc-flow-logs-${local.current_time_and_date}"
+  retention_in_days = 7
+#   skip_destroy      = true
 }
+
 
 # IAM role for flow-logs (only if you enabled flow-logs above)
 resource "aws_iam_role" "flow" {

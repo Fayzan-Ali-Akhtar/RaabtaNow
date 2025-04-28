@@ -36,16 +36,6 @@ resource "aws_security_group" "rds" {
   }
 }
 
-resource "random_password" "rds" {
-  length           = var.db_password_length
-  special          = true
-  override_special = "!#$%&*()_+-="
-  min_lower        = 1
-  min_upper        = 1
-  min_numeric      = 1
-  min_special      = 1
-}
-
 resource "aws_db_instance" "this" {
   identifier             = "${lower(var.project_name)}-db"
   engine                 = "postgres"
@@ -54,7 +44,7 @@ resource "aws_db_instance" "this" {
   allocated_storage      = var.db_allocated_storage
   db_name                = var.db_name
   username               = var.db_username
-  password               = random_password.rds.result
+  password               = var.db_password
   db_subnet_group_name   = aws_db_subnet_group.this.name
   vpc_security_group_ids = [aws_security_group.rds.id]
   publicly_accessible    = true
