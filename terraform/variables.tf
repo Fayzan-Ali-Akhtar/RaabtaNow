@@ -51,7 +51,7 @@ variable "db_password" {
 variable "github_repo_branch" {
   description = "Which branch of the GitHub repo to clone"
   type        = string
-  default     = "cloudwatch-terraform"
+  default     = "main"
 }
 
 variable "alarm_phone_number" {
