@@ -45,5 +45,5 @@ variable "db_username" {
 variable "github_repo_branch" {
   description = "Which branch of the GitHub repo to clone"
   type        = string
-  default     = "fixing-frontend-and-backend"
+  default     = "parameter-store"
 }

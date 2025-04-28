@@ -1,8 +1,13 @@
 ###############################################################################
 # 1) Secret metadata
 ###############################################################################
+locals {
+  # grab "2025-04-28T15:34:00Z" then reformat into "20250428-153400"
+  current_time_and_date = formatdate("YYYYMMDD-hhmmss", timestamp())
+}
+
 resource "aws_secretsmanager_secret" "backend_env" {
-  name        = "${var.project_name}/backend-env"         # e.g. RaabtaNow-Fayzan-testing/backend-env
+  name        = "${var.project_name}/backend-env-${local.current_time_and_date}"         # e.g. RaabtaNow-Fayzan-testing/backend-env
   description = "All backend environment variables"
 
   tags = {
