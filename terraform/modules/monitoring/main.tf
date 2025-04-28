@@ -1,14 +1,14 @@
 ###########################
-# 0) SNS topic + subscription
+# 0) SNS topic + **E-mail** subscription
 ###########################
 resource "aws_sns_topic" "alarm_topic" {
   name = "${var.project_name}-alarms"
 }
 
-resource "aws_sns_topic_subscription" "sms" {
+resource "aws_sns_topic_subscription" "email" {
   topic_arn = aws_sns_topic.alarm_topic.arn
-  protocol  = "sms"
-  endpoint  = var.alarm_phone_number       
+  protocol  = "email"
+  endpoint  = "fayzan585@gmail.com"          # ← send alarms here
 }
 
 locals {
@@ -35,12 +35,12 @@ resource "aws_cloudwatch_metric_alarm" "alb_5xx" {
     LoadBalancer = local.lb_resource_name
   }
 
-  alarm_description   = "More than 10 target-side 5xx errors in 1 min"
+  alarm_description   = "More than 1 target-side 5xx errors in 1 min"
   treat_missing_data  = "notBreaching"
   actions_enabled     = true
   alarm_actions       = [aws_sns_topic.alarm_topic.arn]
 
-  depends_on = [aws_sns_topic_subscription.sms]
+  depends_on = [aws_sns_topic_subscription.email]
 }
 
 resource "aws_cloudwatch_metric_alarm" "alb_latency" {
@@ -61,7 +61,7 @@ resource "aws_cloudwatch_metric_alarm" "alb_latency" {
   treat_missing_data = "notBreaching"
   alarm_actions      = [aws_sns_topic.alarm_topic.arn]
 
-  depends_on = [aws_sns_topic_subscription.sms]
+  depends_on = [aws_sns_topic_subscription.email]
 }
 
 ###########################
@@ -85,7 +85,7 @@ resource "aws_cloudwatch_metric_alarm" "ec2_cpu_high" {
   alarm_actions      = [aws_sns_topic.alarm_topic.arn]
   ok_actions         = [aws_sns_topic.alarm_topic.arn]
 
-  depends_on = [aws_sns_topic_subscription.sms]
+  depends_on = [aws_sns_topic_subscription.email]
 }
 
 ###########################
@@ -108,7 +108,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_cpu_high" {
   alarm_description  = "RDS CPU >80 % for 10 min"
   alarm_actions      = [aws_sns_topic.alarm_topic.arn]
 
-  depends_on = [aws_sns_topic_subscription.sms]
+  depends_on = [aws_sns_topic_subscription.email]
 }
 
 resource "aws_cloudwatch_metric_alarm" "rds_free_storage_low" {
@@ -128,7 +128,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_free_storage_low" {
   alarm_description  = "RDS free storage <1 GiB"
   alarm_actions      = [aws_sns_topic.alarm_topic.arn]
 
-  depends_on    = [aws_sns_topic_subscription.sms]
+  depends_on    = [aws_sns_topic_subscription.email]
 }
 
 ###########################
