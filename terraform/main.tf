@@ -11,20 +11,6 @@ module "vpc" {
   aws_region   = var.aws_region
 }
 
-
-# ———————————————————————————————————————————————————————————————
-# 0️⃣ Self-Signed Certificate (pre-generated .crt/.key in repo)
-# ———————————————————————————————————————————————————————————————
-resource "aws_acm_certificate" "self_signed" {
-  private_key      = file("${path.root}/self_signed.key")
-  certificate_body = file("${path.root}/self_signed.crt")
-
-  tags = {
-    Name    = "${local.unique_project_name}-selfsigned-cert"
-    Project = local.unique_project_name
-  }
-}
-
 # 2. Fetch Latest Amazon Linux 2023 AMI via SSM
 data "aws_ssm_parameter" "al2023_ami" {
   name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
@@ -56,7 +42,24 @@ module "alb" {
   project_name            = local.unique_project_name
   vpc_id                  = module.vpc.vpc_id
   subnet_ids              = module.vpc.public_subnet_ids # ALB lives in public tier
-  aws_acm_certificate_arn = aws_acm_certificate.self_signed.arn
+  # use the validated ACM cert
+  aws_acm_certificate_arn = aws_acm_certificate.backend.arn
+
+  # wait until validation is done
+  depends_on = [aws_acm_certificate_validation.backend]
+}
+
+resource "aws_route53_record" "backend_alias" {
+  zone_id = data.aws_route53_zone.root.zone_id
+  name    = local.backend_domain_name         # api.fayzanaliakhtar.com
+  type    = "A"
+
+  alias {
+    # dualstack handles v4 + v6 and is recommended by AWS docs
+    name                   = "dualstack.${module.alb.alb_dns_name}"
+    zone_id                = module.alb.alb_zone_id
+    evaluate_target_health = false
+  }
 }
 
 # 2️⃣ ASG Module (behind the ALB’s Target Group)
@@ -108,7 +111,7 @@ module "frontend" {
   project_name = local.unique_project_name
   aws_region   = var.aws_region
   frontend_dir = "${path.root}/../frontend"
-  backend_url  = "https://${module.alb.alb_dns_name}"
+  backend_url  = "https://${local.backend_domain_name}"
   depends_on   = [module.asg]
 }
 
@@ -121,4 +124,55 @@ module "monitoring" {
   rds_instance_id = module.rds.db_instance_id
 
   vpc_id               = module.vpc.vpc_id
+}
+
+# ──────────────────────────────────────────────────────────────
+# 0️⃣  Public ACM certificate for api.fayzanaliakhtar.com
+# ──────────────────────────────────────────────────────────────
+locals {
+  backend_domain_name = "api.fayzanaliakhtar.com"
+}
+
+data "aws_route53_zone" "root" {
+  name         = "fayzanaliakhtar.com."
+  private_zone = false
+}
+
+resource "aws_acm_certificate" "backend" {
+  domain_name               = local.backend_domain_name
+  validation_method         = "DNS"
+  lifecycle { create_before_destroy = true }
+
+  tags = {
+    Name    = "${local.unique_project_name}-cert"
+    Project = local.unique_project_name
+  }
+}
+
+resource "aws_route53_record" "backend_validation" {
+  for_each = {
+    for dvo in aws_acm_certificate.backend.domain_validation_options :
+    dvo.domain_name => {
+      name   = dvo.resource_record_name
+      type   = dvo.resource_record_type
+      record = dvo.resource_record_value
+    }
+  }
+
+  zone_id = data.aws_route53_zone.root.zone_id
+  name    = each.value.name
+  type    = each.value.type
+  records = [each.value.record]
+  ttl     = 60
+}
+
+resource "aws_acm_certificate_validation" "backend" {
+  certificate_arn         = aws_acm_certificate.backend.arn
+  validation_record_fqdns = [for r in aws_route53_record.backend_validation : r.fqdn]
+}
+
+################  ROOT OUTPUTS  ####################
+output "backend_url" {
+  description = "HTTPS URL to backend"
+  value       = "https://${local.backend_domain_name}"
 }

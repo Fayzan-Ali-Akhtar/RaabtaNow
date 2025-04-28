@@ -31,3 +31,8 @@ output "alb_arn" {
   description = "Full ARN of the ALB"
   value       = aws_lb.this.arn
 }
+
+output "alb_zone_id" {
+  description = "Route 53 zone ID that belongs to the ALB DNS name"
+  value       = aws_lb.this.zone_id
+}

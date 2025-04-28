@@ -60,7 +60,7 @@ output "alb_certificate_arn" {
   value       = module.alb.certificate_arn
 }
 
-output "backend_url" {
-  description = "HTTPS URL to backend"
-  value       = "https://${module.alb.alb_dns_name}"
-}
+# output "backend_url" {
+#   description = "HTTPS URL to backend"
+#   value       = "https://${module.alb.alb_dns_name}"
+# }
