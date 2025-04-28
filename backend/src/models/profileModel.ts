@@ -1,5 +1,5 @@
 import { DataTypes } from "sequelize";
-import sequelize from "../db/database";
+import sequelize from "../db/sequelize";
 import User from "./userModel";
 import Job from "./jobModel";        // Simple post model
 import JobPost from "./jobPostModel"; // Job listing model

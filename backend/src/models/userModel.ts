@@ -1,6 +1,6 @@
 // models/user.ts
 import { DataTypes, Model, Optional } from 'sequelize';
-import sequelize from '../db/database';
+import sequelize from '../db/sequelize';
 
 // 1. Define the attributes of the User
 interface UserAttributes {

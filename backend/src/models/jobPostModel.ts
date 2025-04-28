@@ -1,5 +1,5 @@
 import { DataTypes, Model, Optional } from 'sequelize';
-import sequelize from '../db/database';
+import sequelize from '../db/sequelize';
 import User from './userModel';
 
 // 1. Define attributes for JobPost
