@@ -18,9 +18,9 @@ const cognito = new CognitoIdentityProviderClient({
 
 export const signup = async (req: any, res: any) => {
   console.log("Sign up request", req.body);
-  const { name, email, password, group } = req.body;
+  const { name, email, password } = req.body;
 
-  if (!email || !password || !group || !name) {
+  if (!email || !password || !name) {
     return res.status(400).json({
       success: false,
       message: "name, email, password and group are required"
@@ -41,7 +41,7 @@ export const signup = async (req: any, res: any) => {
     const addGroupCmd = new AdminAddUserToGroupCommand({
       UserPoolId: process.env.COGNITO_USER_POOL_ID!,
       Username: email,
-      GroupName: group,
+      GroupName: "candidate",
     });
     await cognito.send(addGroupCmd);
 

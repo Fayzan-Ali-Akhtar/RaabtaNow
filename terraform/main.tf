@@ -6,7 +6,7 @@ resource "random_id" "suffix" {
 
 # 2) Build a new, unique project name
 locals {
-  unique_project_name = "${var.project_name}-${random_id.suffix.hex}"
+  unique_project_name = "${var.project_name}-Adeen"
 }
 
 # 1. Discover Default VPC
@@ -87,7 +87,7 @@ module "asg" {
   db_port              = module.rds.port
   db_name              = module.rds.db_name
   db_username          = module.rds.username
-  db_password          = module.rds.password
+  db_password          = "Csmajor!lums25"
 
   alb_sg_id            = module.alb.alb_security_group_id
   target_group_arn     = module.alb.target_group_arn
@@ -107,7 +107,7 @@ resource "local_file" "backend_env" {
     DB_PORT=${module.rds.port}
     DB_NAME=${module.rds.db_name}
     DB_USERNAME=${module.rds.username}
-    DB_PASSWORD=${module.rds.password}
+    DB_PASSWORD=${"Csmajor!lums25"}
   EOF
 }
 
