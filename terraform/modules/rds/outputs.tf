@@ -20,6 +20,11 @@ output "username" {
 
 output "password" {
   description = "Master password"
-  value       = random_password.rds.result
+  value       = var.db_password
   sensitive   = true
+}
+
+output "db_instance_id" {
+  description = "RDS instance identifier"
+  value       = aws_db_instance.this.id
 }

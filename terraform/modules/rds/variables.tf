@@ -24,3 +24,12 @@ variable "db_allocated_storage" {
   type    = number
   default = 20            # free‑tier limit
 }
+
+variable "subnet_ids" { type = list(string) }  
+variable "vpc_id"     { type = string }        
+
+variable "db_password" {
+  type        = string
+  description = "Database password. If not provided, a random password will be generated."
+  default     = "Csmajor!lums25" 
+}

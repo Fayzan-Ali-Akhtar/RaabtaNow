@@ -1,26 +1,16 @@
 # terraform/main.tf
 
-resource "random_id" "suffix" {
-  byte_length = 4
-}
-
 # 2) Build a new, unique project name
 locals {
-  unique_project_name = "${var.project_name}-Adeen"
+  unique_project_name = "${var.project_name}-${var.developer_name}"
 }
 
-# 1. Discover Default VPC
-data "aws_vpc" "default" {
-  default = true
+module "vpc" {
+  source       = "./modules/vpc"
+  project_name = local.unique_project_name
+  aws_region   = var.aws_region
 }
 
-# 1a. Fetch all subnet IDs in that VPC
-data "aws_subnets" "default" {
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.default.id]
-  }
-}
 
 # ———————————————————————————————————————————————————————————————
 # 0️⃣ Self-Signed Certificate (pre-generated .crt/.key in repo)
@@ -42,57 +32,59 @@ data "aws_ssm_parameter" "al2023_ami" {
 
 # 3. Create Cognito first
 module "cognito" {
-  source           = "./modules/cognito"
-  project_name     = local.unique_project_name
-  user_pool_name   = "${local.unique_project_name}-pool"
-  user_groups      = ["recruiter", "candidate"]
+  source         = "./modules/cognito"
+  project_name   = local.unique_project_name
+  user_pool_name = "${local.unique_project_name}-pool"
+  user_groups    = ["recruiter", "candidate"]
   # …any other cognito inputs…
 }
 
 module "rds" {
   source       = "./modules/rds"
   project_name = local.unique_project_name
-  db_name     = var.db_name
-  db_username = var.db_username
+  subnet_ids   = module.vpc.data_subnet_ids
+  vpc_id       = module.vpc.vpc_id
+  db_name      = var.db_name
+  db_username  = var.db_username
+  db_password  = var.db_password
   # you may override db_name/db_username/etc here if you like
 }
 
 # 1️⃣ ALB Module (incl. self-signed TLS ACM import)
 module "alb" {
-  source       = "./modules/alb"
-  project_name = local.unique_project_name
-  vpc_id       = data.aws_vpc.default.id
-  subnet_ids   = data.aws_subnets.default.ids
-
-   aws_acm_certificate_arn  = aws_acm_certificate.self_signed.arn
+  source                  = "./modules/alb"
+  project_name            = local.unique_project_name
+  vpc_id                  = module.vpc.vpc_id
+  subnet_ids              = module.vpc.public_subnet_ids # ALB lives in public tier
+  aws_acm_certificate_arn = aws_acm_certificate.self_signed.arn
 }
 
 # 2️⃣ ASG Module (behind the ALB’s Target Group)
 module "asg" {
-  source               = "./modules/asg"
-  project_name         = local.unique_project_name
-  aws_region           = var.aws_region
-  ami_id               = data.aws_ssm_parameter.al2023_ami.value
-  instance_type        = var.instance_type
-  subnet_ids           = data.aws_subnets.default.ids
-  vpc_id              = data.aws_vpc.default.id
+  source        = "./modules/asg"
+  project_name  = local.unique_project_name
+  aws_region    = var.aws_region
+  ami_id        = data.aws_ssm_parameter.al2023_ami.value
+  instance_type = var.instance_type
+  subnet_ids    = module.vpc.app_subnet_ids # backend EC2 in private tier
+  vpc_id        = module.vpc.vpc_id
 
-  github_repo_url      = var.github_repo_url
-  github_backend_path  = var.github_backend_path
+  github_repo_url     = var.github_repo_url
+  github_backend_path = var.github_backend_path
 
   cognito_user_pool_id = module.cognito.user_pool_id
   cognito_client_id    = module.cognito.user_pool_client_id
 
-  db_endpoint          = module.rds.endpoint
-  db_port              = module.rds.port
-  db_name              = module.rds.db_name
-  db_username          = module.rds.username
-  db_password          = "Csmajor!lums25"
+  db_endpoint = module.rds.endpoint
+  db_port     = module.rds.port
+  db_name     = module.rds.db_name
+  db_username = module.rds.username
+  db_password = var.db_password
 
-  alb_sg_id            = module.alb.alb_security_group_id
-  target_group_arn     = module.alb.target_group_arn
+  alb_sg_id        = module.alb.alb_security_group_id
+  target_group_arn = module.alb.target_group_arn
 
-  github_repo_branch   = var.github_repo_branch
+  github_repo_branch = var.github_repo_branch
 }
 
 # Write backend/.env
@@ -107,7 +99,7 @@ resource "local_file" "backend_env" {
     DB_PORT=${module.rds.port}
     DB_NAME=${module.rds.db_name}
     DB_USERNAME=${module.rds.username}
-    DB_PASSWORD=${"Csmajor!lums25"}
+    DB_PASSWORD=${var.db_password}
   EOF
 }
 
@@ -116,6 +108,18 @@ module "frontend" {
   project_name = local.unique_project_name
   aws_region   = var.aws_region
   frontend_dir = "${path.root}/../frontend"
-  backend_url = "https://${module.alb.alb_dns_name}"
+  backend_url  = "https://${module.alb.alb_dns_name}"
   depends_on   = [module.asg]
+}
+
+module "monitoring" {
+  source       = "./modules/monitoring"
+  project_name = local.unique_project_name
+
+  alb_arn         = module.alb.alb_arn
+  asg_name        = module.asg.asg_name
+  rds_instance_id = module.rds.db_instance_id
+
+  alarm_phone_number          = var.alarm_phone_number
+  vpc_id               = module.vpc.vpc_id
 }

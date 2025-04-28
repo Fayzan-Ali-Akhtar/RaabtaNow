@@ -54,7 +54,12 @@ app.get('/api', (req: any, res: any) => res.send('✅ Backend test is working!')
 // API routes
 app.use('/api', userRouter);
 
-// Start server
+
+// Test route that always returns 500
+app.get('/api/error', (_req, res) => {
+  res.status(500).send('❌ Intentional server error');
+});
+
 const start = async () => {
   try {
     await sequelize.authenticate(); // Connect to the database
