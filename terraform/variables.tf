@@ -41,27 +41,9 @@ variable "db_username" {
   default     = "postgres"
 }
 
-variable "db_password" {
-  description = "RDS master username (must be lowercase)"
-  type        = string
-  default     = "Csmajor!lums25"
-}
-
 #  variable for the branch name
 variable "github_repo_branch" {
   description = "Which branch of the GitHub repo to clone"
   type        = string
-  default     = "cloudwatch-terraform"
-}
-
-variable "alarm_phone_number" {
-  description = "Phone number to receive CloudWatch alarm notifications"
-  type        = string
-  default     = "+923204795636" 
-}
-
-variable "developer_name" {
-  description = "Name of the developer (used to prefix resources)"
-  type        = string
-  default     = "Fayzan"
+  default     = "fixing-frontend-and-backend"
 }

@@ -84,38 +84,33 @@ resource "aws_cloudwatch_log_group" "backend" {
   retention_in_days = 7
 }
 
-############################
-# IAM: allow reading Parameter Store
-############################
-data "aws_iam_policy_document" "ssm_param_read" {
+###############################################################################
+# IAM: allow reading the single Secrets Manager secret
+###############################################################################
+data "aws_iam_policy_document" "secrets_read" {
   statement {
+    sid    = "ReadBackendEnvSecret"
     effect = "Allow"
 
     actions = [
-      "ssm:GetParameter",
-      "ssm:GetParameters",
-      "ssm:GetParametersByPath"
+      "secretsmanager:GetSecretValue",
     ]
 
-    # restrict to this project’s namespace
-    resources = [
-      "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/${var.project_name}/*"
-    ]
+    resources = [ var.secret_arn ]
   }
 }
 
-resource "aws_iam_policy" "ssm_param_read" {
-  name        = "${var.project_name}-ssm-param-read"
-  description = "Read-only access to SSM parameters for the project"
-  policy      = data.aws_iam_policy_document.ssm_param_read.json
+resource "aws_iam_policy" "secrets_read" {
+  name        = "${var.project_name}-secrets-read"
+  description = "Read-only access to backend env secret"
+  policy      = data.aws_iam_policy_document.secrets_read.json
 }
 
-resource "aws_iam_role_policy_attachment" "ssm_param_read" {
+resource "aws_iam_role_policy_attachment" "secrets_read" {
   role       = aws_iam_role.ssm_role.name
-  policy_arn = aws_iam_policy.ssm_param_read.arn
+  policy_arn = aws_iam_policy.secrets_read.arn
 }
 
-data "aws_caller_identity" "current" {}
 
 
 # 2) Launch Template with inline user_data
@@ -140,6 +135,8 @@ resource "aws_launch_template" "this" {
     # 1) Logging
     exec > >(tee /home/ec2-user/app.log) 2>&1
 
+    export SECRET_ARN="${var.secret_arn}"
+
     # 2) Update & install
     dnf update -y
     dnf install -y git jq awscli nodejs20
@@ -151,29 +148,6 @@ resource "aws_launch_template" "this" {
       --single-branch \
       ${var.github_repo_url} repo
     cd repo/${var.github_backend_path}
-
-    export AWS_REGION="${var.aws_region}"
-
-    PARAM_PATH="/${var.project_name}"
-    NEXT_TOKEN=""
-
-    > .env   # start empty
-    while : ; do
-      RESP=$(aws ssm get-parameters-by-path \
-               --path "$${PARAM_PATH}" \
-               --with-decryption --recursive --output json \
-               $${NEXT_TOKEN:+--next-token "$${NEXT_TOKEN}"} )
-      echo "$${RESP}" | jq -r '.Parameters[] | "\(.Name)=\(.Value)"' \
-              | sed "s#$${PARAM_PATH}/##" >> .env
-
-      NEXT_TOKEN=$(echo "$${RESP}" | jq -r '.NextToken // empty')
-      [[ -z "$${NEXT_TOKEN}" ]] && break
-    done
-
-    # load into shell (handles passwords with punctuation/spaces)
-    set -a
-    source .env
-    set +a
 
     # 5) Build & start
     npm install

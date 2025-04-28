@@ -1,9 +1,18 @@
 # modules/rds/main.tf
 
+data "aws_vpc" "default" {}
+
+data "aws_subnets" "default" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
+}
+
 resource "aws_db_subnet_group" "this" {
   # lowercase the project name
   name       = "${lower(var.project_name)}-db-subnet-group"
-  subnet_ids = var.subnet_ids
+  subnet_ids = data.aws_subnets.default.ids
 
   tags = {
     Name    = "${lower(var.project_name)}-db-subnet-group"
@@ -14,7 +23,7 @@ resource "aws_db_subnet_group" "this" {
 resource "aws_security_group" "rds" {
   name        = "${lower(var.project_name)}-rds-sg"
   description = "Allow PostgreSQL inbound"
-  vpc_id = var.vpc_id
+  vpc_id      = data.aws_vpc.default.id
 
   ingress {
     from_port   = 5432
@@ -36,6 +45,16 @@ resource "aws_security_group" "rds" {
   }
 }
 
+resource "random_password" "rds" {
+  length           = var.db_password_length
+  special          = true
+  override_special = "!#$%&*()_+-="
+  min_lower        = 1
+  min_upper        = 1
+  min_numeric      = 1
+  min_special      = 1
+}
+
 resource "aws_db_instance" "this" {
   identifier             = "${lower(var.project_name)}-db"
   engine                 = "postgres"
@@ -44,7 +63,7 @@ resource "aws_db_instance" "this" {
   allocated_storage      = var.db_allocated_storage
   db_name                = var.db_name
   username               = var.db_username
-  password               = var.db_password
+  password               = "Csmajor!lums25"
   db_subnet_group_name   = aws_db_subnet_group.this.name
   vpc_security_group_ids = [aws_security_group.rds.id]
   publicly_accessible    = true

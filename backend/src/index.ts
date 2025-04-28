@@ -11,20 +11,34 @@ import CommentRouter from './routes/commentRoute';
 import path from 'path';
 import User from './models/userModel';
 import Job from './models/jobModel';
+import { loadSecrets } from "./utils/secrets";
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.use(cors({ origin: '*' }))
-app.use(express.json())
 
-// Middleware to parse form-data (for file uploads)
-app.use(express.urlencoded({ extended: true }));
 
 User.hasMany(Job, { foreignKey: 'author_id', as: 'jobs' });
 Job.belongsTo(User, { foreignKey: 'author_id', as: 'author' });
 
-// Health-check
+
+
+
+
+(async () => {
+  /* ------------------------------------------------------------------ */
+  await loadSecrets();                         // 🔑 1) copy keys into process.env
+  const { default: sequelize } = await import("./db/database"); // 2) *then* init DB
+  /* ------------------------------------------------------------------ */
+
+  app.use(cors({ origin: "*" }));
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+
+  // ─────────────────────────  ROUTES  ───────────────────────────────
+  // Routes
+
+  // Health-check
 app.get('/', async (req: any, res: any) => {
   try {
     await sequelize.authenticate(); // ⬅️ correct way for Sequelize
@@ -35,7 +49,6 @@ app.get('/', async (req: any, res: any) => {
   }
 });
 
-// Routes
 // app.use('/api', userRouter);
 app.use('/api', jobRouter); //---> uncomment when token logit added
 // app.use('/api', jobRouter);
@@ -54,28 +67,19 @@ app.get('/api', (req: any, res: any) => res.send('✅ Backend test is working!')
 // API routes
 app.use('/api', userRouter);
 
-
-// Test route that always returns 500
-app.get('/api/error', (_req, res) => {
-  res.status(500).send('❌ Intentional server error');
-});
-
-const start = async () => {
+  // Start server
   try {
-    await sequelize.authenticate(); // Connect to the database
-    console.log('✅ Connected to PostgreSQL');
+    await sequelize.authenticate();
+    console.log("✅ Connected to PostgreSQL");
 
-    await sequelize.sync({ alter: true }); // 🔥 Sync the models to DB
-    console.log('✅ All tables synced with DB');
+    await sequelize.sync({ alter: true });
+    console.log("✅ All tables synced with DB");
 
-    app.listen(port, () => {
-      console.log(`🚀 Server listening on http://localhost:${port}`);
-    });
+    app.listen(port, () =>
+      console.log(`🚀 Server listening on http://localhost:${port}`),
+    );
   } catch (err) {
-    console.error('❌ Failed to connect to DB:', err);
+    console.error("❌ Failed to connect to DB:", err);
     process.exit(1);
   }
-};
-
-
-start();
+})();

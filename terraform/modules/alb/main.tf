@@ -1,4 +1,3 @@
-# root/module/alb/variables.tf
 # Security Group for ALB
 resource "aws_security_group" "alb" {
   name        = "${var.project_name}-alb-sg"

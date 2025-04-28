@@ -36,5 +36,5 @@ provider "aws" {
   }
 }
 
-provider "local" {} # nothing to configure
+provider "local" {}    # nothing to configure
 provider "tls" {}

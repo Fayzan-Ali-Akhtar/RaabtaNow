@@ -22,3 +22,7 @@ variable "alb_sg_id"            { type = string }
 variable "target_group_arn"     { type = string }
 
 variable "github_repo_branch"   { type = string }
+variable "secret_arn" {
+  description = "ARN of the Secrets Manager secret that holds backend env-vars"
+  type        = string
+}
