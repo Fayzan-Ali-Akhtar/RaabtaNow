@@ -123,3 +123,26 @@ module "monitoring" {
   alarm_phone_number          = var.alarm_phone_number
   vpc_id               = module.vpc.vpc_id
 }
+
+module "ssm_parameters" {
+  source       = "./modules/ssm_parameters"
+  project_name = local.unique_project_name
+
+  parameters = {
+    # static
+    AWS_REGION            = var.aws_region
+    # Cognito
+    COGNITO_USER_POOL_ID  = module.cognito.user_pool_id
+    COGNITO_CLIENT_ID     = module.cognito.user_pool_client_id
+    # RDS
+    DB_ENDPOINT           = module.rds.endpoint
+    DB_PORT               = module.rds.port
+    DB_NAME               = module.rds.db_name
+    DB_USERNAME           = module.rds.username
+    DB_PASSWORD           = var.db_password        # will be stored as SecureString
+    # Front- & Back-end URLs
+    FRONTEND_URL          = module.frontend.cloudfront_domain_name
+    BACKEND_URL           = "https://${module.alb.alb_dns_name}"
+    # anything else you like…
+  }
+}

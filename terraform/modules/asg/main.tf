@@ -84,6 +84,40 @@ resource "aws_cloudwatch_log_group" "backend" {
   retention_in_days = 7
 }
 
+############################
+# IAM: allow reading Parameter Store
+############################
+data "aws_iam_policy_document" "ssm_param_read" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "ssm:GetParameter",
+      "ssm:GetParameters",
+      "ssm:GetParametersByPath"
+    ]
+
+    # restrict to this project’s namespace
+    resources = [
+      "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/${var.project_name}/*"
+    ]
+  }
+}
+
+resource "aws_iam_policy" "ssm_param_read" {
+  name        = "${var.project_name}-ssm-param-read"
+  description = "Read-only access to SSM parameters for the project"
+  policy      = data.aws_iam_policy_document.ssm_param_read.json
+}
+
+resource "aws_iam_role_policy_attachment" "ssm_param_read" {
+  role       = aws_iam_role.ssm_role.name
+  policy_arn = aws_iam_policy.ssm_param_read.arn
+}
+
+data "aws_caller_identity" "current" {}
+
+
 # 2) Launch Template with inline user_data
 resource "aws_launch_template" "this" {
   name_prefix   = "${var.project_name}-lt-"
@@ -101,14 +135,14 @@ resource "aws_launch_template" "this" {
 
   user_data = base64encode(<<-EOF
     #!/bin/bash
-    set -ex
+    set -euxo pipefail
 
     # 1) Logging
     exec > >(tee /home/ec2-user/app.log) 2>&1
 
     # 2) Update & install
     dnf update -y
-    dnf install -y git nodejs20
+    dnf install -y git jq awscli nodejs20
 
     # 3) Clone your repo (only the specified branch)
     cd /home/ec2-user
@@ -118,17 +152,28 @@ resource "aws_launch_template" "this" {
       ${var.github_repo_url} repo
     cd repo/${var.github_backend_path}
 
-    # 4) Write .env in the backend folder
-    cat > .env <<EOL
-    AWS_REGION=${var.aws_region}
-    COGNITO_USER_POOL_ID=${var.cognito_user_pool_id}
-    COGNITO_CLIENT_ID=${var.cognito_client_id}
-    DB_ENDPOINT=${var.db_endpoint}
-    DB_PORT=${var.db_port}
-    DB_NAME=${var.db_name}
-    DB_USERNAME=${var.db_username}
-    DB_PASSWORD=${var.db_password}
-    EOL
+    export AWS_REGION="${var.aws_region}"
+
+    PARAM_PATH="/${var.project_name}"
+    NEXT_TOKEN=""
+
+    > .env   # start empty
+    while : ; do
+      RESP=$(aws ssm get-parameters-by-path \
+               --path "$${PARAM_PATH}" \
+               --with-decryption --recursive --output json \
+               $${NEXT_TOKEN:+--next-token "$${NEXT_TOKEN}"} )
+      echo "$${RESP}" | jq -r '.Parameters[] | "\(.Name)=\(.Value)"' \
+              | sed "s#$${PARAM_PATH}/##" >> .env
+
+      NEXT_TOKEN=$(echo "$${RESP}" | jq -r '.NextToken // empty')
+      [[ -z "$${NEXT_TOKEN}" ]] && break
+    done
+
+    # load into shell (handles passwords with punctuation/spaces)
+    set -a
+    source .env
+    set +a
 
     # 5) Build & start
     npm install
