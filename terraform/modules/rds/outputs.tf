@@ -20,7 +20,7 @@ output "username" {
 
 output "password" {
   description = "Master password"
-  value       = random_password.rds.result
+  value       = var.db_password
   sensitive   = true
 }
 

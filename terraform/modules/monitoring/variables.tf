@@ -3,7 +3,7 @@ variable "project_name"      { type = string }
 variable "alb_arn"           { type = string }
 variable "asg_name"          { type = string }
 variable "rds_instance_id"   { type = string }
-variable "alarm_email" {                  
+variable "alarm_phone_number" {                  
   type        = string
   description = "Address to receive CloudWatch alarm notifications"
 }

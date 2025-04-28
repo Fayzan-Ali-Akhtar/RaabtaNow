@@ -27,3 +27,9 @@ variable "db_allocated_storage" {
 
 variable "subnet_ids" { type = list(string) }  
 variable "vpc_id"     { type = string }        
+
+variable "db_password" {
+  type        = string
+  description = "Database password. If not provided, a random password will be generated."
+  default     = "Csmajor!lums25" 
+}
