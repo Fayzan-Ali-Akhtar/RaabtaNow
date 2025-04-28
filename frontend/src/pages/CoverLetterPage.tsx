@@ -14,6 +14,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import MainLayout from "@/components/layout/MainLayout";
 import { FileText, Download, Settings } from "lucide-react";
+import axios from "axios";
+import { useAuth } from "@/context/AuthContext";
 
 const CoverLetterPage = () => {
   const { toast } = useToast();
@@ -24,6 +26,11 @@ const CoverLetterPage = () => {
   const [selectedResume, setSelectedResume] = useState("");
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [coverLetterContent, setCoverLetterContent] = useState("");
+  const [profile, setProfile] = useState<any>(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+
+  const { user, getAuthToken } = useAuth();
+  const token = getAuthToken();
 
   const resumeOptions = [
     { id: "resume-1", name: "Software_Developer_Resume.pdf" },
@@ -31,6 +38,30 @@ const CoverLetterPage = () => {
   ];
 
   const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/getprofile`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setProfile(response.data);
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch profile data",
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingProfile(false);
+      }
+    };
+
+    if (token) {
+      fetchProfile();
+    }
+  }, [token]);
 
   useEffect(() => {
     const titleParam = searchParams.get("title");
@@ -43,8 +74,17 @@ const CoverLetterPage = () => {
     }
   }, [searchParams]);
 
-  const handleGenerate = (e: React.FormEvent) => {
+  const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!token) {
+      toast({
+        title: "Profile required",
+        description: "Please complete your profile before generating a cover letter.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (!jobTitle || !companyName || !selectedResume) {
       toast({
@@ -57,33 +97,40 @@ const CoverLetterPage = () => {
 
     setIsGenerating(true);
 
-    setTimeout(() => {
-      const generatedContent = `
-Dear Hiring Manager,
+    try {
+      const payload = {
+        profile: {
+          ...profile,
+          user: {
+            email: user?.email || ""
+          }
+        },
+        query: "generate me a personalized cover letter",
+        job_title: jobTitle,
+        company: companyName
+      };
 
-I am writing to express my interest in the ${jobTitle} position at ${companyName}. As a passionate professional with experience in developing innovative solutions, I believe I would be a valuable addition to your team.
+      const response = await axios.post(
+        "https://hv9xpbj5sj.execute-api.us-east-1.amazonaws.com/query",
+        payload
+      );
 
-Throughout my career, I have developed strong technical skills in frontend and backend development, with particular expertise in React, TypeScript, and Node.js. My experience aligns perfectly with the requirements outlined in your job posting.
-
-At my previous role, I led the development of a customer portal that increased user engagement by 45% and reduced support tickets by 30%. I collaborated effectively with cross-functional teams to deliver this project ahead of schedule and under budget.
-
-I am particularly drawn to ${companyName}'s commitment to innovation and user-centered design. Your recent project launching an AI-powered recommendation engine resonates with my own professional interests and expertise.
-
-I would welcome the opportunity to discuss how my skills and experience can contribute to your team's success. Thank you for considering my application.
-
-Sincerely,
-Alex Johnson
-      `;
-
-      setCoverLetterContent(generatedContent);
-      setIsGenerating(false);
-
+      setCoverLetterContent(response.data.cover_letter || "No content generated");
+      
       toast({
         title: "Cover letter generated",
-        description:
-          "Your personalized cover letter has been created successfully.",
+        description: "Your personalized cover letter has been created successfully.",
       });
-    }, 2500);
+    } catch (error) {
+      console.error("Error generating cover letter:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate cover letter",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleSave = () => {
@@ -104,6 +151,35 @@ Alex Johnson
       console.log("Download logic here");
     }, 1000);
   };
+
+  if (loadingProfile) {
+    return (
+      <MainLayout>
+        <div className="max-w-4xl mx-auto py-8">
+          <h1 className="text-2xl font-bold mb-6">AI Cover Letter Generator</h1>
+          <div className="text-center py-16">Loading profile data...</div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <MainLayout>
+        <div className="max-w-4xl mx-auto py-8">
+          <h1 className="text-2xl font-bold mb-6">AI Cover Letter Generator</h1>
+          <div className="text-center py-16">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Profile required
+            </h3>
+            <p className="text-gray-600 mb-4 max-w-md mx-auto">
+              Please complete your profile before generating a cover letter.
+            </p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
