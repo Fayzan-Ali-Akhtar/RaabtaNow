@@ -8,3 +8,9 @@ variable "az_count"         {
     type = number  
 default = 2 
 }           # ≥2 AZs recommended
+
+variable "environment" {
+  description = "dev or prod: controls public-IP & routing for app/data subnets"
+  type        = string
+  default     = "dev"
+}

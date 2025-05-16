@@ -44,7 +44,7 @@ resource "aws_subnet" "app" {
   vpc_id            = aws_vpc.this.id
   cidr_block        = local.app_cidrs[count.index]
   availability_zone = data.aws_availability_zones.available.names[count.index]
-  map_public_ip_on_launch = true
+  map_public_ip_on_launch = var.environment == "dev" ? true : false
   tags = {
     Name = "${var.project_name}-app-${count.index}"
     Tier = "app"
@@ -56,7 +56,7 @@ resource "aws_subnet" "data" {
   vpc_id            = aws_vpc.this.id
   cidr_block        = local.data_cidrs[count.index]
   availability_zone = data.aws_availability_zones.available.names[count.index]
-  map_public_ip_on_launch = true
+  map_public_ip_on_launch = var.environment == "dev" ? true : false
   tags = {
     Name = "${var.project_name}-data-${count.index}"
     Tier = "data"
@@ -65,13 +65,13 @@ resource "aws_subnet" "data" {
 
 # 2️⃣ NAT Gateways (one-per-AZ)
 resource "aws_eip" "nat" {
-  count = var.az_count
+  count = var.environment == "prod" ? var.az_count : 0
   domain = "vpc"
   tags  = { Name = "${var.project_name}-nat-eip-${count.index}" }
 }
 
 resource "aws_nat_gateway" "nat" {
-  count         = var.az_count
+  count         = var.environment == "prod" ? var.az_count : 0
   allocation_id = aws_eip.nat[count.index].id
   subnet_id     = aws_subnet.public[count.index].id
   tags          = { Name = "${var.project_name}-nat-${count.index}" }
@@ -105,19 +105,26 @@ resource "aws_route_table" "app" {
   }
 }
 
+# prod: route via NAT
 resource "aws_route" "app_nat" {
-  count                  = var.az_count
+  count                  = var.environment == "prod" ? var.az_count : 0
   route_table_id         = aws_route_table.app[count.index].id
   destination_cidr_block = "0.0.0.0/0"
-  # nat_gateway_id         = aws_nat_gateway.nat[count.index].id
+  nat_gateway_id         = aws_nat_gateway.nat[count.index].id
+}
+
+# dev: route via IGW
+resource "aws_route" "app_igw" {
+  count                  = var.environment == "dev" ? var.az_count : 0
+  route_table_id         = aws_route_table.app[count.index].id
+  destination_cidr_block = "0.0.0.0/0"
   gateway_id             = aws_internet_gateway.igw.id
-  
-  # depends_on             = [aws_nat_gateway.nat]
+  depends_on             = [aws_internet_gateway.igw]
 }
 
 # ## data → IGW  (make data subnets public too)
 resource "aws_route_table_association" "data_public" {
-  count          = var.az_count
+  count          = var.environment == "dev" ? var.az_count : 0
   subnet_id      = aws_subnet.data[count.index].id
   route_table_id = aws_route_table.public.id
 }

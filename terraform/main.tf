@@ -9,6 +9,7 @@ module "vpc" {
   source       = "./modules/vpc"
   project_name = local.unique_project_name
   aws_region   = var.aws_region
+  environment  = var.environment
 }
 
 
