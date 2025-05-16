@@ -1,1 +1,147 @@
 @import "tailwindcss";
+
+@plugin "tailwindcss-animate";
+
+@layer theme, base, components, utilities;
+
+@theme {
+  --container-padding: 2rem;
+  --container-center: true;
+  --container-breakpoint-2xl: 1400px;
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  /* Custom palette: worklink */
+  --color-worklink-50: #f0f7ff;
+  --color-worklink-100: #e0eefe;
+  --color-worklink-200: #bae0fd;
+  --color-worklink-300: #7cc8fb;
+  --color-worklink-400: #38abf6;
+  --color-worklink-500: #0c90e6;
+  --color-worklink-600: #0072c3;
+  --color-worklink-700: #0059a0;
+  --color-worklink-800: #044c84;
+  --color-worklink-900: #08406e;
+  --color-worklink-950: #062948;
+
+  --border-radius-lg: var(--radius);
+  --border-radius-md: calc(var(--radius) - 2px);
+  --border-radius-sm: calc(var(--radius) - 4px);
+
+  --keyframe-accordion-down-from-height: 0;
+  --keyframe-accordion-down-to-height: var(--radix-accordion-content-height);
+  --keyframe-accordion-up-from-height: var(--radix-accordion-content-height);
+  --keyframe-accordion-up-to-height: 0;
+  --keyframe-fade-in-from-opacity: 0;
+  --keyframe-fade-in-from-transform: translateY(10px);
+  --keyframe-fade-in-to-opacity: 1;
+  --keyframe-fade-in-to-transform: translateY(0);
+
+  --animation-accordion-down: accordion-down 0.2s ease-out;
+  --animation-accordion-up: accordion-up 0.2s ease-out;
+  --animation-fade-in: fade-in 0.3s ease-out;
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 210 90% 46%;
+    /* --primary: 263 85% 63%; */
+    --primary-foreground: 210 40% 98%;
+    --secondary: 219 89% 90%;
+    --secondary-foreground: 240 10% 3.9%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 263 85% 63%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 210 90% 46%;
+    /* --primary: 263 85% 63%; -- {purple}*/
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 263 85% 63%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  @keyframes accordion-down {
+    from {
+      height: var(--keyframe-accordion-down-from-height);
+    }
+    to {
+      height: var(--keyframe-accordion-down-to-height);
+    }
+  }
+
+  @keyframes accordion-up {
+    from {
+      height: var(--keyframe-accordion-up-from-height);
+    }
+    to {
+      height: var(--keyframe-accordion-up-to-height);
+    }
+  }
+
+  @keyframes fade-in {
+    0% {
+      opacity: var(--keyframe-fade-in-from-opacity);
+      transform: var(--keyframe-fade-in-from-transform);
+    }
+    100% {
+      opacity: var(--keyframe-fade-in-to-opacity);
+      transform: var(--keyframe-fade-in-to-transform);
+    }
+  }
+}
