@@ -60,6 +60,7 @@ import { AuthProvider } from "./context/AuthContext";
 
 // Private Route
 import PrivateRoute from "./pages/auth/PrivateRoute"; // 👈 (Adjust import path if needed)
+import ConfirmUserPage from "./pages/auth/ConfirmUserPage";
 
 const queryClient = new QueryClient();
 
@@ -74,6 +75,8 @@ const App = () => (
             {/* Public Routes */}
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/confirm-user" element={<ConfirmUserPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/features" element={<FeaturesPage />} />
             

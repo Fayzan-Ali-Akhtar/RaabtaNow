@@ -62,7 +62,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await axios.post(`${VITE_BACKEND_URL}/api/login`, { email, password });
 
       localStorage.setItem("authToken", JSON.stringify(response?.data?.user));
-      setUser(response?.data?.user?.id); // ✅ Directly using decoded token
+      setUser(response?.data?.user); // ✅ Directly using decoded token
     } catch (error) {
       console.error("Login error:", error);
       throw error instanceof Error ? error : new Error("Login failed");

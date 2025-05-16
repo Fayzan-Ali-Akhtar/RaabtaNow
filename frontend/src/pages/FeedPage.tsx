@@ -84,6 +84,7 @@ const FeedPage = () => {
     setIsSubmitting(true);
 
     try {
+      console.log("user", user)
       const res = await axios.post(
         `${VITE_BACKEND_URL}/api/createpost`,
         {

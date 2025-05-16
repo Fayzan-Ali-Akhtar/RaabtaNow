@@ -4,31 +4,35 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { useAuth } from "@/context/AuthContext";
+import { VITE_BACKEND_URL } from "@/constant";
+import axios from "axios";
+import { FileText, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import MainLayout from "@/components/layout/MainLayout";
-import { FileText, Download, Settings } from "lucide-react";
+
+interface UserProfile {
+  full_name: string;
+  working_experience: string;
+  bio: string;
+  location: string;
+  company: string;
+  skills: string[];
+  professional_headline: string;
+}
 
 const CoverLetterPage = () => {
+  const { getAuthToken } = useAuth();
   const { toast } = useToast();
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [jobTitle, setJobTitle] = useState("");
   const [companyName, setCompanyName] = useState("");
-  const [selectedResume, setSelectedResume] = useState("");
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [coverLetterContent, setCoverLetterContent] = useState("");
-
-  const resumeOptions = [
-    { id: "resume-1", name: "Software_Developer_Resume.pdf" },
-    { id: "resume-2", name: "Marketing_Resume.pdf" },
-  ];
+  const [profileComplete, setProfileComplete] = useState(true);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
   const [searchParams] = useSearchParams();
 
@@ -41,12 +45,68 @@ const CoverLetterPage = () => {
       setCompanyName(companyParam);
       setIsReadOnly(true);
     }
+
+    const fetchProfile = async () => {
+      try {
+        const token = getAuthToken();
+        const res = await axios.get(`${VITE_BACKEND_URL}/api/getprofile`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const data = res.data;
+        console.log("Fetched profile:", data);
+
+        console.log(data.profile.skills);
+        console.log(data.profile.bio);
+        console.log(data.profile.location);
+        console.log(data.profile.contact_email);
+        console.log(data.profile.company);
+        console.log(data.profile.professional_headline);
+        console.log(data.profile.User?.email);
+        console.log(data.profile.skills.length > 0);
+
+        const hasRequiredFields =
+          data.profile.full_name &&
+          data.profile.working_experience &&
+          data.profile.bio &&
+          data.profile.location &&
+          (data.profile.contact_email || data.profile.User?.email) &&
+          data.profile.company &&
+          data.profile.skills &&
+          data.profile.skills.length > 0 &&
+          data.profile.professional_headline;
+        console.log("Profile completeness check:", Boolean(hasRequiredFields));
+
+        setProfileComplete(Boolean(hasRequiredFields));
+
+        const user = {
+          full_name: data.profile.full_name,
+          working_experience: data.profile.working_experience,
+          bio: data.profile.bio,
+          location: data.profile.location,
+          company: data.profile.company,
+          skills: data.profile.skills,
+          professional_headline: data.profile.professional_headline,
+        };
+
+        setUserProfile(user);
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+        toast({
+          title: "Profile fetch failed",
+          description: "Unable to retrieve user profile data.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchProfile();
   }, [searchParams]);
 
-  const handleGenerate = (e: React.FormEvent) => {
+  const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!jobTitle || !companyName || !selectedResume) {
+    if (!jobTitle || !companyName) {
       toast({
         title: "Missing information",
         description: "Please fill in all required fields.",
@@ -55,35 +115,57 @@ const CoverLetterPage = () => {
       return;
     }
 
+    if (!profileComplete || !userProfile) {
+      toast({
+        title: "Incomplete Profile",
+        description:
+          "Please complete your profile (bio, email, location, company, skills, headline) to use the generator.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsGenerating(true);
 
-    setTimeout(() => {
-      const generatedContent = `
-Dear Hiring Manager,
+    try {
+      const payload = {
+        job_title: jobTitle,
+        company_name: companyName,
+        user_profile: {
+          name: userProfile.full_name || "Your Name",
+          experience: userProfile.working_experience || "3",
+          skills: userProfile.skills || [],
+          achievements: "",
+          tone: "professional",
+          highlight: userProfile.professional_headline || "",
+        },
+        query:
+          "Generate a cover letter tailored to the job description and company.",
+      };
 
-I am writing to express my interest in the ${jobTitle} position at ${companyName}. As a passionate professional with experience in developing innovative solutions, I believe I would be a valuable addition to your team.
+      const res = await axios.post(
+        "https://hv9xpbj5sj.execute-api.us-east-1.amazonaws.com/query",
+        payload
+      );
 
-Throughout my career, I have developed strong technical skills in frontend and backend development, with particular expertise in React, TypeScript, and Node.js. My experience aligns perfectly with the requirements outlined in your job posting.
+      console.log("Generated cover letter:", res.data);
 
-At my previous role, I led the development of a customer portal that increased user engagement by 45% and reduced support tickets by 30%. I collaborated effectively with cross-functional teams to deliver this project ahead of schedule and under budget.
-
-I am particularly drawn to ${companyName}'s commitment to innovation and user-centered design. Your recent project launching an AI-powered recommendation engine resonates with my own professional interests and expertise.
-
-I would welcome the opportunity to discuss how my skills and experience can contribute to your team's success. Thank you for considering my application.
-
-Sincerely,
-Alex Johnson
-      `;
-
-      setCoverLetterContent(generatedContent);
-      setIsGenerating(false);
-
+      setCoverLetterContent(res.data?.text || "Generated content goes here...");
       toast({
         title: "Cover letter generated",
         description:
           "Your personalized cover letter has been created successfully.",
       });
-    }, 2500);
+    } catch (err) {
+      console.error("Error generating cover letter:", err);
+      toast({
+        title: "Generation failed",
+        description: "Something went wrong while generating the cover letter.",
+        variant: "destructive",
+      });
+    }
+
+    setIsGenerating(false);
   };
 
   const handleSave = () => {
@@ -94,21 +176,53 @@ Alex Johnson
     });
   };
 
+  const handleCopy = () => {
+    navigator.clipboard
+      .writeText(coverLetterContent)
+      .then(() => {
+        toast({
+          title: "Copied!",
+          description: "Cover letter copied to clipboard.",
+        });
+      })
+      .catch(() => {
+        toast({
+          title: "Copy failed",
+          description: "Could not copy cover letter to clipboard.",
+          variant: "destructive",
+        });
+      });
+  };
+
   const handleDownload = () => {
+    const blob = new Blob([coverLetterContent], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "cover_letter.txt";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
     toast({
       title: "Downloading cover letter",
-      description: "Your cover letter is being prepared for download.",
+      description: "Your cover letter is being downloaded.",
     });
-
-    setTimeout(() => {
-      console.log("Download logic here");
-    }, 1000);
   };
 
   return (
     <MainLayout>
       <div className="max-w-4xl mx-auto py-8">
         <h1 className="text-2xl font-bold mb-6">AI Cover Letter Generator</h1>
+
+        {!profileComplete && (
+          <div className="bg-yellow-100 text-yellow-900 border border-yellow-300 p-4 rounded mb-6">
+            Your profile is incomplete. Please update your profile with your
+            bio, email, location, company, skills, and professional headline to
+            generate a cover letter.
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Job Details Form */}
@@ -130,65 +244,36 @@ Alex Johnson
                 </div>
                 <div>
                   <Label htmlFor="company-name">Company Name</Label>
-                  {isReadOnly ? (
-                    <Input
-                      id="company-name"
-                      value={companyName}
-                      readOnly
-                      className="w-full"
-                    />
-                  ) : (
-                    <select
-                      id="company-name"
-                      value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
-                      className="w-full p-2 mb-2 border rounded"
-                      required
-                    >
-                      <option value="">Select Company</option>
-                      <option value="Google (Alphabet Inc.)">
-                        Google (Alphabet Inc.)
-                      </option>
-                      <option value="Microsoft">Microsoft</option>
-                      <option value="Amazon">Amazon</option>
-                      <option value="Apple">Apple</option>
-                      <option value="Meta (formerly Facebook)">
-                        Meta (formerly Facebook)
-                      </option>
-                      <option value="Netflix">Netflix</option>
-                      <option value="NVIDIA">NVIDIA</option>
-                      <option value="Tesla">Tesla</option>
-                      <option value="Adobe">Adobe</option>
-                      <option value="Salesforce">Salesforce</option>
-                    </select>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="resume-select">Select Resume</Label>
-                  <Select
-                    value={selectedResume}
-                    onValueChange={setSelectedResume}
+                  <select
+                    id="company-name"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    disabled={isReadOnly}
+                    required
+                    className="w-full border px-3 py-2 rounded text-sm text-gray-900"
                   >
-                    <SelectTrigger id="resume-select">
-                      <SelectValue placeholder="Choose a resume" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {resumeOptions.map((resume) => (
-                        <SelectItem key={resume.id} value={resume.id}>
-                          {resume.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Our AI will analyze your resume to personalize the cover
-                    letter.
-                  </p>
+                    <option value="">Select Company</option>
+                    <option value="Google (Alphabet Inc.)">
+                      Google (Alphabet Inc.)
+                    </option>
+                    <option value="Microsoft">Microsoft</option>
+                    <option value="Amazon">Amazon</option>
+                    <option value="Apple">Apple</option>
+                    <option value="Meta (formerly Facebook)">
+                      Meta (formerly Facebook)
+                    </option>
+                    <option value="Netflix">Netflix</option>
+                    <option value="NVIDIA">NVIDIA</option>
+                    <option value="Tesla">Tesla</option>
+                    <option value="Adobe">Adobe</option>
+                    <option value="Salesforce">Salesforce</option>
+                  </select>
                 </div>
+
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={isGenerating}
+                  disabled={isGenerating || !profileComplete}
                 >
                   {isGenerating ? "Generating..." : "Generate Cover Letter"}
                 </Button>
@@ -196,7 +281,7 @@ Alex Johnson
             </div>
           </div>
 
-          {/* Preview / Edit Section */}
+          {/* Preview Section */}
           <div className="md:col-span-2">
             <div className="bg-white rounded-lg shadow-sm border h-full flex flex-col">
               <div className="p-6 border-b flex items-center justify-between">
@@ -204,29 +289,21 @@ Alex Johnson
                   <FileText className="h-5 w-5 text-worklink-600" />
                   <h2 className="text-lg font-semibold">Cover Letter</h2>
                 </div>
-
-                <div className="flex space-x-2">
-                  {coverLetterContent && (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsEditing(!isEditing)}
-                      >
-                        <Settings className="mr-2 h-4 w-4" />
-                        {isEditing ? "Preview" : "Edit"}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleDownload}
-                      >
-                        <Download className="mr-2 h-4 w-4" />
-                        Download
-                      </Button>
-                    </>
-                  )}
-                </div>
+                {coverLetterContent && (
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDownload}
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      Download
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleCopy}>
+                      Copy
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <div className="p-6 flex-grow">
@@ -255,8 +332,8 @@ Alex Johnson
                       No cover letter generated yet
                     </h3>
                     <p className="text-gray-600 mb-4 max-w-md mx-auto">
-                      Fill out the job details on the left and click "Generate
-                      Cover Letter" to create your personalized cover letter.
+                      Fill out the job details and click "Generate Cover
+                      Letter".
                     </p>
                   </div>
                 )}

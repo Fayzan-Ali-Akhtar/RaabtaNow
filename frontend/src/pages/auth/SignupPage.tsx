@@ -69,7 +69,8 @@ const SignupPage = () => {
       });
 
       // 3. Redirect to Feed
-      navigate('/login');
+      navigate('/confirm-user', { state: { email: formData.email } });
+
 
     } catch (error: any) {
       console.error('Signup error:', error);

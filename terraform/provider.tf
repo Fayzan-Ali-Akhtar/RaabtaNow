@@ -24,12 +24,12 @@ terraform {
     }
   }
 
-  backend "s3" {
-    bucket = "cloud-dev-project-backup"                     # ← your bucket name
-    key    = "raabtanow/terraform.tfstate"     # path inside the bucket
-    region = "us-east-1"                       # bucket’s region
-    encrypt = true                             # SSE-S3
-  }
+  # backend "s3" {
+  #   bucket = "cloud-dev-project-backup"                     # ← your bucket name
+  #   key    = "raabtanow/terraform.tfstate"     # path inside the bucket
+  #   region = "us-east-1"                       # bucket’s region
+  #   encrypt = true                             # SSE-S3
+  # }
 }
 
 

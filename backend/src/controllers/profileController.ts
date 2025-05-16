@@ -120,6 +120,7 @@ export const updateProfile = async (
     console.log('🛠 Incoming profile update request');
 
     // Extract and verify JWT
+    console.log(req.body)
     
 
     const profile = await Profile.findOne({ where: { user_id } });
@@ -132,7 +133,7 @@ export const updateProfile = async (
       'full_name', 'bio', 'location', 'company',
       'contact_email', 'age', 'skills', 'interests',
       'loc_preference', 'working_experience', 'profile_pic_id',
-      'github_link', 'linkedin_link', 'twitter_link', 'website_link'
+      'github_link', 'linkedin_link', 'twitter_link', 'website_link','professional_headline',
     ] as const;
 
     updatableFields.forEach((field) => {

@@ -57,11 +57,11 @@ variable "github_repo_branch" {
 variable "developer_name" {
   description = "Name of the developer (used to prefix resources)"
   type        = string
-  default     = "Fayzan"
+  default     = "Ali"
 }
 
 variable "environment" {
   description = "Deployment mode: dev (public subnets) or prod (private app, isolated data)"
   type        = string
-  default     = "prod"
+  default     = "dev"
 }

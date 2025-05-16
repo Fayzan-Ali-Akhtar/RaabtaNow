@@ -34,11 +34,11 @@ const FeaturesPage = () => {
             title="Professional Profile"
             description="Create a comprehensive profile showcasing your skills, experience, and portfolio to stand out to employers."
           />
-          <FeatureCard 
+          {/* <FeatureCard 
             icon={<Search size={24} />}
             title="Smart Job Matching"
             description="Our AI matches your skills and preferences with job opportunities for higher relevance and success rates."
-          />
+          /> */}
         </div>
       </section>
 
@@ -52,7 +52,7 @@ const FeaturesPage = () => {
               <p className="text-lg text-gray-600 mb-6">
                 Say goodbye to generic templates. Our AI technology creates personalized cover letters that highlight your relevant skills and experience for each specific job application.
               </p>
-              <ul className="space-y-2 mb-6">
+              {/* <ul className="space-y-2 mb-6">
                 <li className="flex items-start">
                   <div className="mr-2 mt-1 text-worklink-600">✓</div>
                   <span>Analyzes your resume to identify key strengths</span>
@@ -65,7 +65,7 @@ const FeaturesPage = () => {
                   <div className="mr-2 mt-1 text-worklink-600">✓</div>
                   <span>Fully editable with downloadable formats</span>
                 </li>
-              </ul>
+              </ul> */}
               <Link to="/signup">
                 <Button>Try It Now</Button>
               </Link>
@@ -88,7 +88,7 @@ const FeaturesPage = () => {
                 className="rounded-lg shadow-lg"
               />
             </div>
-            <div className="order-1 md:order-2">
+            {/* <div className="order-1 md:order-2">
               <h2 className="text-3xl font-bold mb-4">Intelligent Job Matching</h2>
               <p className="text-lg text-gray-600 mb-6">
                 Our matching algorithm finds jobs that align with your skills, experience, and preferences, saving you time and increasing your chances of success.
@@ -110,7 +110,7 @@ const FeaturesPage = () => {
               <Link to="/signup">
                 <Button>Find Your Match</Button>
               </Link>
-            </div>
+            </div> */}
           </div>
 
           {/* Professional Network Feature */}
@@ -159,21 +159,21 @@ const FeaturesPage = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <FeatureCard 
+          {/* <FeatureCard 
             icon={<Bell size={24} />}
             title="Job Alerts"
             description="Get notified about new job opportunities that match your profile and preferences."
-          />
+          /> */}
           <FeatureCard 
             icon={<MessageSquare size={24} />}
             title="Networking Forum"
             description="Connect with professionals in your industry to exchange advice and opportunities."
           />
-          <FeatureCard 
+          {/* <FeatureCard 
             icon={<Settings size={24} />}
             title="Resume Management"
             description="Upload, store, and manage multiple versions of your resume for different job applications."
-          />
+          /> */}
           <FeatureCard 
             icon={<User size={24} />}
             title="Career Insights"

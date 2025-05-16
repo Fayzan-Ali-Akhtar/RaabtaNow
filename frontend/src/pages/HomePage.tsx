@@ -58,7 +58,7 @@ const HomePage = () => {
             title="Professional Network"
             description="Connect with other professionals, share insights, and grow your network."
           />
-          <FeatureCard 
+          {/* <FeatureCard 
             icon={<Search size={24} />}
             title="Smart Job Matching"
             description="Get job recommendations that match your skills, experience, and preferences."
@@ -67,7 +67,7 @@ const HomePage = () => {
             icon={<Settings size={24} />}
             title="Resume Builder"
             description="Create and manage professional resumes with customizable templates."
-          />
+          /> */}
         </div>
       </section>
 
