@@ -175,7 +175,7 @@ const JobsPage = () => {
                 />
               </div>
               {/* Filters */}
-              <div>
+              {/* <div>
                 <Label>Location</Label>
                 <Select
                   value={filters.location}
@@ -193,8 +193,8 @@ const JobsPage = () => {
                     <SelectItem value="new york">New York</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-              <div>
+              </div> */}
+              {/* <div>
                 <Label>Job Type</Label>
                 <Select
                   value={filters.jobType}
@@ -212,8 +212,8 @@ const JobsPage = () => {
                     <SelectItem value="on-site">On-site</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-              <div>
+              </div> */}
+              {/* <div>
                 <Label>Experience</Label>
                 <Select
                   value={filters.experience}
@@ -231,7 +231,7 @@ const JobsPage = () => {
                     <SelectItem value="expert">Expert</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+              </div> */}
               <div className="flex items-end space-x-2">
                 <Button type="submit">Search</Button>
                 <Button
@@ -321,7 +321,7 @@ const JobsPage = () => {
         <div>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">
-              Jobs Matching Your Profile
+              Jobs You May Like
             </h2>
             <span className="text-gray-500">
               {filteredJobs.length} jobs found

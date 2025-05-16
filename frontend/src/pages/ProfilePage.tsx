@@ -278,7 +278,7 @@ const ProfilePage = () => {
               <TabsTrigger value="about">About</TabsTrigger>
               <TabsTrigger value="posts">My Posts</TabsTrigger>
               <TabsTrigger value="jobposts">My Job Posts</TabsTrigger>
-              <TabsTrigger value="resume">Resume</TabsTrigger>
+              {/* <TabsTrigger value="resume">Resume</TabsTrigger> */}
             </TabsList>
 
             {/* About Tab */}
