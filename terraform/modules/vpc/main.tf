@@ -44,6 +44,7 @@ resource "aws_subnet" "app" {
   vpc_id            = aws_vpc.this.id
   cidr_block        = local.app_cidrs[count.index]
   availability_zone = data.aws_availability_zones.available.names[count.index]
+  map_public_ip_on_launch = true
   tags = {
     Name = "${var.project_name}-app-${count.index}"
     Tier = "app"
@@ -55,6 +56,7 @@ resource "aws_subnet" "data" {
   vpc_id            = aws_vpc.this.id
   cidr_block        = local.data_cidrs[count.index]
   availability_zone = data.aws_availability_zones.available.names[count.index]
+  map_public_ip_on_launch = true
   tags = {
     Name = "${var.project_name}-data-${count.index}"
     Tier = "data"
@@ -107,9 +109,17 @@ resource "aws_route" "app_nat" {
   count                  = var.az_count
   route_table_id         = aws_route_table.app[count.index].id
   destination_cidr_block = "0.0.0.0/0"
-  nat_gateway_id         = aws_nat_gateway.nat[count.index].id
-  # optional but explicit:
-  depends_on             = [aws_nat_gateway.nat]
+  # nat_gateway_id         = aws_nat_gateway.nat[count.index].id
+  gateway_id             = aws_internet_gateway.igw.id
+  
+  # depends_on             = [aws_nat_gateway.nat]
+}
+
+# ## data → IGW  (make data subnets public too)
+resource "aws_route_table_association" "data_public" {
+  count          = var.az_count
+  subnet_id      = aws_subnet.data[count.index].id
+  route_table_id = aws_route_table.public.id
 }
 
 resource "aws_route_table_association" "app" {
