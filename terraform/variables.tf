@@ -63,5 +63,5 @@ variable "developer_name" {
 variable "environment" {
   description = "Deployment mode: dev (public subnets) or prod (private app, isolated data)"
   type        = string
-  default     = "prod"
+  default     = "dev"
 }

@@ -73,19 +73,21 @@ module "asg" {
   github_repo_url     = var.github_repo_url
   github_backend_path = var.github_backend_path
 
-  cognito_user_pool_id = module.cognito.user_pool_id
-  cognito_client_id    = module.cognito.user_pool_client_id
+  # cognito_user_pool_id = module.cognito.user_pool_id
+  # cognito_client_id    = module.cognito.user_pool_client_id
 
-  db_endpoint = module.rds.endpoint
-  db_port     = module.rds.port
-  db_name     = module.rds.db_name
-  db_username = module.rds.username
-  db_password = var.db_password
+  # db_endpoint = module.rds.endpoint
+  # db_port     = module.rds.port
+  # db_name     = module.rds.db_name
+  # db_username = module.rds.username
+  # db_password = var.db_password
 
   alb_sg_id        = module.alb.alb_security_group_id
   target_group_arn = module.alb.target_group_arn
 
   github_repo_branch = var.github_repo_branch
+
+  secret_arn           = module.secrets.secret_arn
 }
 
 # Write backend/.env
@@ -122,4 +124,25 @@ module "monitoring" {
   rds_instance_id = module.rds.db_instance_id
 
   vpc_id               = module.vpc.vpc_id
+}
+
+module "secrets" {
+  source       = "./modules/secrets"
+  project_name = local.unique_project_name
+
+  parameters = {
+    # static
+    AWS_REGION            = var.aws_region
+    # Cognito
+    COGNITO_USER_POOL_ID  = module.cognito.user_pool_id
+    COGNITO_CLIENT_ID     = module.cognito.user_pool_client_id
+    # RDS
+    DB_ENDPOINT           = module.rds.endpoint
+    DB_PORT               = module.rds.port
+    DB_NAME               = module.rds.db_name
+    DB_USERNAME           = module.rds.username
+    DB_PASSWORD           = "Csmajor!lums25"
+    # URLs
+    BACKEND_URL           = "https://${module.alb.alb_dns_name}"
+  }
 }

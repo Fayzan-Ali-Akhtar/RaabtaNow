@@ -9,16 +9,21 @@ variable "instance_type"        { type = string }
 variable "github_repo_url"      { type = string }
 variable "github_backend_path"  { type = string }
 
-variable "cognito_user_pool_id" { type = string }
-variable "cognito_client_id"    { type = string }
+# variable "cognito_user_pool_id" { type = string }
+# variable "cognito_client_id"    { type = string }
 
-variable "db_endpoint"          { type = string }
-variable "db_port"              { type = number }
-variable "db_name"              { type = string }
-variable "db_username"          { type = string }
-variable "db_password"          { type = string }
+# variable "db_endpoint"          { type = string }
+# variable "db_port"              { type = number }
+# variable "db_name"              { type = string }
+# variable "db_username"          { type = string }
+# variable "db_password"          { type = string }
 
 variable "alb_sg_id"            { type = string }
 variable "target_group_arn"     { type = string }
 
 variable "github_repo_branch"   { type = string }
+
+variable "secret_arn" {
+  description = "ARN of the Secrets Manager secret that holds backend env-vars"
+  type        = string
+}
