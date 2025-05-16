@@ -86,7 +86,7 @@ const ConfirmUserPage = () => {
                     name="Code"
                     type="text"
                     placeholder="eg. 123456"
-                    value={formData.password}
+                    value={formData.Code}
                     onChange={handleChange}
                     required
                   />
