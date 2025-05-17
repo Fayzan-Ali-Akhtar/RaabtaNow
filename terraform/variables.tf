@@ -57,7 +57,7 @@ variable "github_repo_branch" {
 variable "developer_name" {
   description = "Name of the developer (used to prefix resources)"
   type        = string
-  default     = "Ali"
+  default     = "Adeen"
 }
 
 variable "environment" {

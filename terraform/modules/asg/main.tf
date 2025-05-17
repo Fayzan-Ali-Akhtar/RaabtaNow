@@ -84,33 +84,6 @@ resource "aws_cloudwatch_log_group" "backend" {
   retention_in_days = 7
 }
 
-###############################################################################
-# IAM: allow reading the single Secrets Manager secret
-###############################################################################
-data "aws_iam_policy_document" "secrets_read" {
-  statement {
-    sid    = "ReadBackendEnvSecret"
-    effect = "Allow"
-
-    actions = [
-      "secretsmanager:GetSecretValue",
-    ]
-
-    resources = [ var.secret_arn ]
-  }
-}
-
-resource "aws_iam_policy" "secrets_read" {
-  name        = "${var.project_name}-secrets-read"
-  description = "Read-only access to backend env secret"
-  policy      = data.aws_iam_policy_document.secrets_read.json
-}
-
-resource "aws_iam_role_policy_attachment" "secrets_read" {
-  role       = aws_iam_role.ssm_role.name
-  policy_arn = aws_iam_policy.secrets_read.arn
-}
-
 # 2) Launch Template with inline user_data
 resource "aws_launch_template" "this" {
   name_prefix   = "${var.project_name}-lt-"
@@ -135,7 +108,7 @@ resource "aws_launch_template" "this" {
 
     # 2) Update & install
     dnf update -y
-    dnf install -y git nodejs20 awscli jq
+    dnf install -y git nodejs20
 
     # 3) Clone your repo (only the specified branch)
     cd /home/ec2-user
@@ -145,34 +118,19 @@ resource "aws_launch_template" "this" {
       ${var.github_repo_url} repo
     cd repo/${var.github_backend_path}
 
-    # 4) Retrieve backend-env from Secrets Manager
-    aws secretsmanager get-secret-value \
-      --secret-id ${var.secret_arn} \
-      --region ${var.aws_region} \
-      --query SecretString \
-      --output text > secret.json
-
-    # 5) Parse and export each variable
-    export DB_USERNAME=$(jq -r .DB_USERNAME secret.json)
-    export DB_PASSWORD=$(jq -r .DB_PASSWORD secret.json)
-    export DB_ENDPOINT=$(jq -r .DB_ENDPOINT secret.json)
-    export DB_NAME=$(jq -r .DB_NAME secret.json)
-    export COGNITO_USER_POOL_ID=$(jq -r .COGNITO_USER_POOL_ID secret.json)
-    export COGNITO_CLIENT_ID=$(jq -r .COGNITO_CLIENT_ID secret.json)
-    export AWS_REGION=${var.aws_region}
-
-    # 6) Write .env file for the backend
+    # 4) Write .env in the backend folder
     cat > .env <<EOL
-    DB_USERNAME=$DB_USERNAME
-    DB_PASSWORD=$DB_PASSWORD
-    DB_ENDPOINT=$DB_ENDPOINT
-    DB_NAME=$DB_NAME
-    COGNITO_USER_POOL_ID=$COGNITO_USER_POOL_ID
-    COGNITO_CLIENT_ID=$COGNITO_CLIENT_ID
-    AWS_REGION=$AWS_REGION
+    AWS_REGION=${var.aws_region}
+    COGNITO_USER_POOL_ID=${var.cognito_user_pool_id}
+    COGNITO_CLIENT_ID=${var.cognito_client_id}
+    DB_ENDPOINT=${var.db_endpoint}
+    DB_PORT=${var.db_port}
+    DB_NAME=${var.db_name}
+    DB_USERNAME=${var.db_username}
+    DB_PASSWORD=${var.db_password}
     EOL
 
-    # 7) Build & start
+    # 5) Build & start
     npm install
     npm run build
     nohup npm start &

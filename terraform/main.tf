@@ -73,14 +73,14 @@ module "asg" {
   github_repo_url     = var.github_repo_url
   github_backend_path = var.github_backend_path
 
-  # cognito_user_pool_id = module.cognito.user_pool_id
-  # cognito_client_id    = module.cognito.user_pool_client_id
+  cognito_user_pool_id = module.cognito.user_pool_id
+  cognito_client_id    = module.cognito.user_pool_client_id
 
-  # db_endpoint = module.rds.endpoint
-  # db_port     = module.rds.port
-  # db_name     = module.rds.db_name
-  # db_username = module.rds.username
-  # db_password = var.db_password
+  db_endpoint = module.rds.endpoint
+  db_port     = module.rds.port
+  db_name     = module.rds.db_name
+  db_username = module.rds.username
+  db_password = var.db_password
 
   alb_sg_id        = module.alb.alb_security_group_id
   target_group_arn = module.alb.target_group_arn
